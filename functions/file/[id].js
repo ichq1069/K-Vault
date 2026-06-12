@@ -214,18 +214,28 @@ async function getRecordWithKey(env, fileId) {
 
   const hasKnownPrefix = STORAGE_PREFIXES.filter(Boolean).some((prefix) => fileId.startsWith(prefix));
   
-  let candidateKeys;
+  let candidateKeys = [];
   if (hasKnownPrefix) {
-    // fileId has prefix like img:, try both with and without prefix
+    // fileId has prefix like img:, try the original fileId first
+    candidateKeys.push(fileId);
+    
+    // Strip all known prefixes (handles double prefixes like img:r2:...)
     let withoutPrefix = fileId;
-    for (const prefix of STORAGE_PREFIXES) {
-      if (prefix && withoutPrefix.startsWith(prefix)) {
-        withoutPrefix = withoutPrefix.slice(prefix.length);
-        break;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const prefix of STORAGE_PREFIXES) {
+        if (prefix && withoutPrefix.startsWith(prefix)) {
+          withoutPrefix = withoutPrefix.slice(prefix.length);
+          changed = true;
+          break;
+        }
       }
     }
-    // Try with prefix first, then without prefix
-    candidateKeys = withoutPrefix ? [fileId, withoutPrefix] : [fileId];
+    // Add stripped version if different
+    if (withoutPrefix && withoutPrefix !== fileId) {
+      candidateKeys.push(withoutPrefix);
+    }
   } else {
     // fileId has no prefix, try original key first, then with common prefixes
     candidateKeys = [fileId, `img:${fileId}`, `vid:${fileId}`, `aud:${fileId}`, `doc:${fileId}`];
@@ -507,11 +517,30 @@ async function handleR2File(context, r2Key, record = null) {
 async function getR2RecordFromKV(env, r2Key) {
   if (!env.img_url) return null;
 
-  const candidateKeys = r2Key.startsWith('r2:') ? [r2Key, r2Key.slice(3)] : [`r2:${r2Key}`, r2Key];
+  // Strip all known prefixes to handle cases like img:r2:...
+  let cleanKey = r2Key;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const prefix of STORAGE_PREFIXES) {
+      if (prefix && cleanKey.startsWith(prefix)) {
+        cleanKey = cleanKey.slice(prefix.length);
+        changed = true;
+        break;
+      }
+    }
+  }
+  
+  // Try with r2: prefix first, then without
+  const candidateKeys = cleanKey.startsWith('r2:') ? [r2Key, cleanKey, `r2:${cleanKey}`] : [`r2:${cleanKey}`, cleanKey, r2Key];
 
   for (const key of candidateKeys) {
-    const record = await env.img_url.getWithMetadata(key);
-    if (record?.metadata) return record;
+    try {
+      const record = await env.img_url.getWithMetadata(key);
+      if (record?.metadata) return record;
+    } catch (error) {
+      console.warn(`KV read error for R2 key ${key}:`, error.message);
+    }
   }
 
   return null;
