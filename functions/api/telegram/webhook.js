@@ -64,21 +64,34 @@ export async function onRequestPost(context) {
       )
     : `${media.fileId}.${media.fileExtension}`;
 
-  if (env.img_url && shouldWriteTelegramMetadata(env)) {
+  if (env.img_url) {
+    const writeFullMetadata = shouldWriteTelegramMetadata(env);
     await env.img_url.put(`${media.fileId}.${media.fileExtension}`, '', {
-      metadata: {
-        TimeStamp: Date.now(),
-        ListType: 'None',
-        Label: 'None',
-        liked: false,
-        fileName: media.fileName,
-        fileSize: media.fileSize,
-        storageType: 'telegram',
-        telegramFileId: media.fileId,
-        telegramMessageId: media.messageId || undefined,
-        fromWebhook: true,
-        signedLink: useSigned,
-      },
+      metadata: writeFullMetadata
+        ? {
+            TimeStamp: Date.now(),
+            ListType: 'None',
+            Label: 'None',
+            liked: false,
+            fileName: media.fileName,
+            fileSize: media.fileSize,
+            storageType: 'telegram',
+            telegramFileId: media.fileId,
+            telegramMessageId: media.messageId || undefined,
+            fromWebhook: true,
+            signedLink: useSigned,
+          }
+        : {
+            // Minimal metadata for webhook uploads to appear in file lists
+            TimeStamp: Date.now(),
+            fileName: media.fileName,
+            fileSize: media.fileSize,
+            storageType: 'telegram',
+            telegramFileId: media.fileId,
+            telegramMessageId: media.messageId || undefined,
+            fromWebhook: true,
+            signedLink: useSigned,
+          },
     });
   }
 
