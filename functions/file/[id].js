@@ -216,6 +216,7 @@ async function getRecordWithKey(env, fileId) {
   
   let candidateKeys;
   if (hasKnownPrefix) {
+    // fileId has prefix like img:, try both with and without prefix
     let withoutPrefix = fileId;
     for (const prefix of STORAGE_PREFIXES) {
       if (prefix && withoutPrefix.startsWith(prefix)) {
@@ -223,9 +224,11 @@ async function getRecordWithKey(env, fileId) {
         break;
       }
     }
-    candidateKeys = [fileId, withoutPrefix].filter(Boolean);
+    // Try with prefix first, then without prefix
+    candidateKeys = withoutPrefix ? [fileId, withoutPrefix] : [fileId];
   } else {
-    candidateKeys = STORAGE_PREFIXES.filter(Boolean).map((prefix) => `${prefix}${fileId}`);
+    // fileId has no prefix, try original key first, then with common prefixes
+    candidateKeys = [fileId, `img:${fileId}`, `vid:${fileId}`, `aud:${fileId}`, `doc:${fileId}`];
   }
 
   for (const key of candidateKeys) {
