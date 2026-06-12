@@ -212,25 +212,30 @@ function blockRedirect(requestUrl, request) {
 async function getRecordWithKey(env, fileId) {
   if (!env.img_url) return { record: null, kvKey: fileId };
 
-  const hasKnownPrefix = STORAGE_PREFIXES.some((prefix) => prefix && fileId.startsWith(prefix));
+  const hasKnownPrefix = STORAGE_PREFIXES.filter(Boolean).some((prefix) => fileId.startsWith(prefix));
   
   let candidateKeys;
   if (hasKnownPrefix) {
-    const withoutPrefix = STORAGE_PREFIXES.reduce((acc, prefix) => {
-      if (prefix && acc.startsWith(prefix)) {
-        return acc.slice(prefix.length);
+    let withoutPrefix = fileId;
+    for (const prefix of STORAGE_PREFIXES) {
+      if (prefix && withoutPrefix.startsWith(prefix)) {
+        withoutPrefix = withoutPrefix.slice(prefix.length);
+        break;
       }
-      return acc;
-    }, fileId);
-    candidateKeys = [fileId, withoutPrefix];
+    }
+    candidateKeys = [fileId, withoutPrefix].filter(Boolean);
   } else {
-    candidateKeys = STORAGE_PREFIXES.map((prefix) => `${prefix}${fileId}`);
+    candidateKeys = STORAGE_PREFIXES.filter(Boolean).map((prefix) => `${prefix}${fileId}`);
   }
 
   for (const key of candidateKeys) {
-    const record = await env.img_url.getWithMetadata(key);
-    if (record?.metadata) {
-      return { record, kvKey: key };
+    try {
+      const record = await env.img_url.getWithMetadata(key);
+      if (record?.metadata) {
+        return { record, kvKey: key };
+      }
+    } catch (error) {
+      console.warn(`KV read error for key ${key}:`, error.message);
     }
   }
 
