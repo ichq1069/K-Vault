@@ -213,7 +213,19 @@ async function getRecordWithKey(env, fileId) {
   if (!env.img_url) return { record: null, kvKey: fileId };
 
   const hasKnownPrefix = STORAGE_PREFIXES.some((prefix) => prefix && fileId.startsWith(prefix));
-  const candidateKeys = hasKnownPrefix ? [fileId] : STORAGE_PREFIXES.map((prefix) => `${prefix}${fileId}`);
+  
+  let candidateKeys;
+  if (hasKnownPrefix) {
+    const withoutPrefix = STORAGE_PREFIXES.reduce((acc, prefix) => {
+      if (prefix && acc.startsWith(prefix)) {
+        return acc.slice(prefix.length);
+      }
+      return acc;
+    }, fileId);
+    candidateKeys = [fileId, withoutPrefix];
+  } else {
+    candidateKeys = STORAGE_PREFIXES.map((prefix) => `${prefix}${fileId}`);
+  }
 
   for (const key of candidateKeys) {
     const record = await env.img_url.getWithMetadata(key);
