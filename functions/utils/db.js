@@ -326,8 +326,8 @@ export async function putSetting(env, key, value) {
   if (store.type === 'd1') {
     const { db } = store;
     await db.prepare(
-      'INSERT INTO settings (id, value, updated_at) VALUES (?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at'
+      `INSERT INTO settings (id, value, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
     )
       .bind(key, value, Math.floor(Date.now() / 1000))
       .run();
