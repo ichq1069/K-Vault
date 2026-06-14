@@ -16,6 +16,9 @@ import {
   shouldUseSignedTelegramLinks,
   shouldWriteTelegramMetadata,
 } from "./utils/telegram.js";
+import {
+  putRecord,
+} from "./utils/db.js";
 
 const MB = 1024 * 1024;
 
@@ -243,8 +246,8 @@ async function uploadToTelegramStorage(
     env
   );
 
-  if (env.img_url && shouldWriteTelegramMetadata(env)) {
-    await env.img_url.put(`${fileId}.${fileExtension}`, "", {
+  if ((env.db || env.img_url) && shouldWriteTelegramMetadata(env)) {
+    await putRecord(env, `${fileId}.${fileExtension}`, "", {
       metadata: appendCommonMetadata(
         {
           TimeStamp: Date.now(),
@@ -371,8 +374,8 @@ async function uploadToR2(file, fileName, fileExtension, env, folderPath = "") {
       customMetadata: { fileName, uploadTime: Date.now().toString() },
     });
 
-    if (env.img_url) {
-      await env.img_url.put(`r2:${objectKey}`, "", {
+    if (env.db || env.img_url) {
+      await putRecord(env, `r2:${objectKey}`, "", {
         metadata: appendCommonMetadata(
           {
             TimeStamp: Date.now(),
@@ -414,8 +417,8 @@ async function uploadToS3(file, fileName, fileExtension, env, folderPath = "") {
       },
     });
 
-    if (env.img_url) {
-      await env.img_url.put(`s3:${objectKey}`, "", {
+    if (env.db || env.img_url) {
+      await putRecord(env, `s3:${objectKey}`, "", {
         metadata: appendCommonMetadata(
           {
             TimeStamp: Date.now(),
@@ -454,8 +457,8 @@ async function uploadToDiscordStorage(file, fileName, fileExtension, env, folder
     const fileId = randomId("discord");
     const kvKey = `discord:${fileId}.${fileExtension}`;
 
-    if (env.img_url) {
-      await env.img_url.put(kvKey, "", {
+    if (env.db || env.img_url) {
+      await putRecord(env, kvKey, "", {
         metadata: appendCommonMetadata(
           {
             TimeStamp: Date.now(),
@@ -500,8 +503,8 @@ async function uploadToHFStorage(file, fileName, fileExtension, env, folderPath 
 
     const kvKey = `hf:${fileId}.${fileExtension}`;
 
-    if (env.img_url) {
-      await env.img_url.put(kvKey, "", {
+    if (env.db || env.img_url) {
+      await putRecord(env, kvKey, "", {
         metadata: appendCommonMetadata(
           {
             TimeStamp: Date.now(),
@@ -538,8 +541,8 @@ async function uploadToWebDAVStorage(file, fileName, fileExtension, env, folderP
     const result = await uploadToWebDAV(arrayBuffer, webdavPath, file.type || "application/octet-stream", env);
 
     const kvKey = `webdav:${publicId}`;
-    if (env.img_url) {
-      await env.img_url.put(kvKey, "", {
+    if (env.db || env.img_url) {
+      await putRecord(env, kvKey, "", {
         metadata: appendCommonMetadata(
           {
             TimeStamp: Date.now(),
@@ -583,8 +586,8 @@ async function uploadToGitHubStorage(file, fileName, fileExtension, env, folderP
     );
 
     const kvKey = `github:${publicId}`;
-    if (env.img_url) {
-      await env.img_url.put(kvKey, "", {
+    if (env.db || env.img_url) {
+      await putRecord(env, kvKey, "", {
         metadata: appendCommonMetadata(
           {
             TimeStamp: Date.now(),

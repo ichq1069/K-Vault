@@ -9,6 +9,11 @@ import {
   parseSignedTelegramFileId,
   shouldWriteTelegramMetadata,
 } from '../utils/telegram.js';
+import {
+  getRecordWithKey,
+  putRecord,
+  deleteRecord,
+} from '../utils/db.js';
 
 const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', ''];
 
@@ -82,7 +87,7 @@ export async function onRequest(context) {
     const record = recordResult?.record;
     const kvKey = recordResult?.kvKey || fileId;
 
-    if (env.img_url && !record?.metadata) {
+    if ((env.db || env.img_url) && !record?.metadata) {
       return errorResponse('File not found', 404);
     }
 
@@ -209,22 +214,6 @@ function blockRedirect(requestUrl, request) {
   return Response.redirect(`${requestUrl.origin}/block-img.html`, 302);
 }
 
-async function getRecordWithKey(env, fileId) {
-  if (!env.img_url) return { record: null, kvKey: fileId };
-
-  const hasKnownPrefix = STORAGE_PREFIXES.some((prefix) => prefix && fileId.startsWith(prefix));
-  const candidateKeys = hasKnownPrefix ? [fileId] : STORAGE_PREFIXES.map((prefix) => `${prefix}${fileId}`);
-
-  for (const key of candidateKeys) {
-    const record = await env.img_url.getWithMetadata(key);
-    if (record?.metadata) {
-      return { record, kvKey: key };
-    }
-  }
-
-  return { record: null, kvKey: fileId };
-}
-
 function getSharePassword(request) {
   const url = new URL(request.url);
   return String(
@@ -290,13 +279,25 @@ function shouldCountAsDownload(method, response) {
 }
 
 async function incrementShareDownloadCount(env, kvKey, metadata = {}) {
-  if (!env?.img_url || !kvKey || !metadata) return;
+  if (!(env?.db || env?.img_url) || !kvKey || !metadata) return;
   const nextCount = Number(metadata.shareDownloadCount || 0) + 1;
   const nextMetadata = {
     ...metadata,
     shareDownloadCount: nextCount,
   };
-  await env.img_url.put(kvKey, '', { metadata: nextMetadata });
+  await putRecord(env, kvKey, '', { metadata: nextMetadata });
+}
+
+async function cleanTelegramFilePath(filePath) {
+  if (!filePath) return filePath;
+  const mediaTypes = ['photos', 'documents', 'videos', 'audio', 'stickers', 'voice', 'animation', 'video_note'];
+  for (const type of mediaTypes) {
+    const idx = filePath.indexOf(`/${type}/`);
+    if (idx !== -1) {
+      return filePath.substring(idx + 1);
+    }
+  }
+  return filePath;
 }
 
 async function handleTelegramFile(context, fileId, record = null) {
@@ -315,10 +316,12 @@ async function handleTelegramFile(context, fileId, record = null) {
   const mimeType = getMimeType(fileName);
 
   const telegramFileId = String(fileId).split('.')[0];
-  const filePath = await getTelegramFilePath(env, telegramFileId);
-  if (!filePath) {
+  const rawPath = await getTelegramFilePath(env, telegramFileId);
+  if (!rawPath) {
     return errorResponse('Failed to get file path from Telegram', 500);
   }
+
+  const filePath = cleanTelegramFilePath(rawPath);
 
   const rangeHeader = request.headers.get('Range');
   const fetchHeaders = new Headers();
@@ -347,10 +350,12 @@ async function handleTelegramFile(context, fileId, record = null) {
 async function handleSignedTelegramFile(context, signedMeta) {
   const { request, env } = context;
 
-  const filePath = await getTelegramFilePath(env, signedMeta.fileId);
-  if (!filePath) {
+  const rawPath = await getTelegramFilePath(env, signedMeta.fileId);
+  if (!rawPath) {
     return errorResponse('Failed to get file path from Telegram', 500);
   }
+
+  const filePath = cleanTelegramFilePath(rawPath);
 
   await backfillSignedTelegramMetadata(env, signedMeta);
 
@@ -382,7 +387,7 @@ async function handleSignedTelegramFile(context, signedMeta) {
 }
 
 async function backfillSignedTelegramMetadata(env, signedMeta) {
-  if (!env.img_url || !shouldWriteTelegramMetadata(env)) {
+  if (!(env.db || env.img_url) || !shouldWriteTelegramMetadata(env)) {
     return;
   }
 
@@ -390,10 +395,10 @@ async function backfillSignedTelegramMetadata(env, signedMeta) {
   const kvKey = `${signedMeta.fileId}.${fileExtension}`;
 
   try {
-    const existing = await env.img_url.getWithMetadata(kvKey);
-    if (existing?.metadata) return;
+    const existing = await getRecordWithKey(env, kvKey);
+    if (existing?.record?.metadata) return;
 
-    await env.img_url.put(kvKey, '', {
+    await putRecord(env, kvKey, '', {
       metadata: {
         TimeStamp: signedMeta.timestamp || Date.now(),
         ListType: 'None',
@@ -483,13 +488,13 @@ async function handleR2File(context, r2Key, record = null) {
 }
 
 async function getR2RecordFromKV(env, r2Key) {
-  if (!env.img_url) return null;
+  if (!env.db && !env.img_url) return null;
 
   const candidateKeys = r2Key.startsWith('r2:') ? [r2Key, r2Key.slice(3)] : [`r2:${r2Key}`, r2Key];
 
   for (const key of candidateKeys) {
-    const record = await env.img_url.getWithMetadata(key);
-    if (record?.metadata) return record;
+    const result = await getRecordWithKey(env, key);
+    if (result?.record?.metadata) return result.record;
   }
 
   return null;
@@ -699,12 +704,12 @@ async function handleGitHubFile(context, fileId, record = null) {
 }
 
 async function findRecordByPrefixes(env, fileId, prefixes = []) {
-  if (!env.img_url) return null;
+  if (!env.db && !env.img_url) return null;
 
   for (const prefix of prefixes) {
     const key = `${prefix}${fileId}`;
-    const record = await env.img_url.getWithMetadata(key);
-    if (record?.metadata) return record;
+    const result = await getRecordWithKey(env, key);
+    if (result?.record?.metadata) return result.record;
   }
   return null;
 }

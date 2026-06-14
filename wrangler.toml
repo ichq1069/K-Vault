@@ -1,0 +1,14 @@
+name = "k-vault"
+compatibility_date = "2026-05-03"
+
+# KV Namespace 配置（保留原有支持）
+[[kv_namespaces]]
+binding = "img_url"
+id = "YOUR_KV_NAMESPACE_ID_HERE"
+
+# D1 数据库配置
+[[d1_databases]]
+binding = "db"
+database_name = "k-vault-db"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+migrations_dir = "d1"
