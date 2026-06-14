@@ -46,7 +46,8 @@ router.beforeEach(async (to) => {
 
   if (to.name === 'login') {
     if (!authStore.authRequired || authStore.authenticated) {
-      const target = typeof to.query.redirect === 'string' ? to.query.redirect : '/upload';
+      const rawTarget = typeof to.query.redirect === 'string' ? to.query.redirect : '/upload';
+      const target = rawTarget === '/' ? '/upload' : rawTarget;
       return target;
     }
     return true;
