@@ -11,12 +11,19 @@ export const useAuthStore = defineStore('auth', () => {
   const guestMode = computed(() => authRequired.value && !authenticated.value && guestUpload.value.enabled);
 
   async function refresh() {
-    const data = await apiFetch('/api/auth/check');
-    authRequired.value = Boolean(data.authRequired);
-    authenticated.value = Boolean(data.authenticated);
-    guestUpload.value = data.guestUpload || { enabled: false, maxFileSize: 0, dailyLimit: 0 };
-    initialized.value = true;
-    return data;
+    try {
+      const data = await apiFetch('/api/auth/check');
+      authRequired.value = Boolean(data.authRequired);
+      authenticated.value = Boolean(data.authenticated);
+      guestUpload.value = data.guestUpload || { enabled: false, maxFileSize: 0, dailyLimit: 0 };
+    } catch {
+      // If auth check fails, default to auth required and not authenticated
+      authRequired.value = true;
+      authenticated.value = false;
+      guestUpload.value = { enabled: false, maxFileSize: 0, dailyLimit: 0 };
+    } finally {
+      initialized.value = true;
+    }
   }
 
   async function login(username, password) {

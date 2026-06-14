@@ -43,7 +43,11 @@ const error = ref('');
 
 onMounted(async () => {
   if (!authStore.initialized) {
-    await authStore.refresh();
+    try {
+      await authStore.refresh();
+    } catch {
+      // Auth check failed, stay on login page
+    }
   }
 
   if (!authStore.authRequired || authStore.authenticated) {

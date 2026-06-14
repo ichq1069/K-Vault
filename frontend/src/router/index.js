@@ -41,7 +41,11 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
   if (!authStore.initialized) {
-    await authStore.refresh();
+    try {
+      await authStore.refresh();
+    } catch {
+      // Auth check failed, continue with defaults
+    }
   }
 
   if (to.name === 'login') {
