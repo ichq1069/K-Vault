@@ -1,0 +1,8 @@
+# SPA fallback - serve index.html for all frontend routes
+/*    /index.html   200
+
+# Admin redirects
+/admin    /drive   302
+/admin.html    /drive   302
+/admin/d1    /d1   302
+/admin/mysql    /mysql   302

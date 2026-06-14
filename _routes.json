@@ -1,5 +1,27 @@
 {
   "version": 1,
   "include": ["/*"],
-  "exclude": ["/api/*", "/file/*", "/share/*", "/upload", "/_nuxt/*", "/favicon.ico", "/logo.png", "/theme.css", "/theme.js", "/*.css", "/*.js", "/*.png", "/*.svg", "/*.ico"]
+  "exclude": [
+    "/api/*",
+    "/file/*",
+    "/share/*",
+    "/upload",
+    "/_nuxt/*",
+    "/favicon.ico",
+    "/logo.png",
+    "/theme.css",
+    "/theme.js",
+    "/admin*",
+    "/*.css",
+    "/*.js",
+    "/*.png",
+    "/*.svg",
+    "/*.ico",
+    "/gallery",
+    "/webdav",
+    "/block-img.html",
+    "/whitelist-on.html",
+    "/preview.html",
+    "/login.html"
+  ]
 }
