@@ -629,6 +629,10 @@ function createApp() {
     return c.redirect('/login.html?redirect=%2Fadmin.html', 302);
   });
 
+  // Redirect legacy admin sub-paths to Vue SPA routes
+  app.get('/admin/d1', (c) => c.redirect('/d1', 302));
+  app.get('/admin/mysql', (c) => c.redirect('/mysql', 302));
+
   const handleManageLogout = (c) => {
     const { authService } = getServices(c);
     const token = authService.getSessionTokenFromRequest(c.req.raw);
