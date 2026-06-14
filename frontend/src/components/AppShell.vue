@@ -10,8 +10,10 @@
       </div>
       <nav class="nav-row">
         <router-link class="nav-link" to="/upload">Upload</router-link>
-        <router-link class="nav-link" to="/drive">Drive</router-link>
-        <router-link class="nav-link" to="/storage">Storage</router-link>
+        <router-link class="nav-link" to="/drive" v-if="authStore.authenticated">Drive</router-link>
+        <router-link class="nav-link" to="/storage" v-if="authStore.authenticated">Storage</router-link>
+        <router-link class="nav-link" to="/mysql" v-if="authStore.authenticated">MySQL</router-link>
+        <router-link class="nav-link" to="/d1" v-if="authStore.authenticated">D1</router-link>
         <router-link class="nav-link" to="/status">Status</router-link>
         <a class="nav-link" href="/legacy/index.html" target="_blank" rel="noopener">Legacy</a>
       </nav>

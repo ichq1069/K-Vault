@@ -86,6 +86,12 @@ function loadConfig(env = process.env) {
     settingsRedisPrefix: normalizeEnvString(env.SETTINGS_REDIS_PREFIX, 'k-vault'),
     settingsRedisConnectTimeoutMs: toInt(env.SETTINGS_REDIS_CONNECT_TIMEOUT_MS, 5000),
 
+    mysqlHost: normalizeEnvString(env.MYSQL_HOST),
+    mysqlPort: toInt(env.MYSQL_PORT, 3306),
+    mysqlUser: normalizeEnvString(env.MYSQL_USER, 'root'),
+    mysqlPassword: normalizeEnvString(env.MYSQL_PASSWORD),
+    mysqlDatabase: normalizeEnvString(env.MYSQL_DATABASE),
+
     telegramApiBase: telegramApiBase.value,
 
     // Optional bootstrap default storage from env.

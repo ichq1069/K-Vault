@@ -1,4 +1,5 @@
 ﻿const { initDatabase, cleanupExpiredState } = require('../db');
+const { initMySQL } = require('../db/mysql');
 const { loadConfig } = require('./config');
 const { AuthService } = require('./utils/auth');
 const { GuestService } = require('./utils/guest');
@@ -7,9 +8,10 @@ const { StorageConfigRepository } = require('./repos/storage-config-repo');
 const { FileRepository } = require('./repos/file-repo');
 const { UploadService } = require('./services/upload-service');
 const { ChunkUploadService } = require('./services/chunk-service');
+const { MySQLSyncService } = require('./services/mysql-sync-service');
 const { createSettingsStore } = require('./settings/factory');
 
-function createContainer(env = process.env) {
+async function createContainer(env = process.env) {
   const config = loadConfig(env);
   const db = initDatabase(config.dbPath);
 
@@ -36,6 +38,15 @@ function createContainer(env = process.env) {
   const authService = new AuthService(db, config);
   const guestService = new GuestService(db, config);
 
+  const mysqlSync = new MySQLSyncService();
+  const mysqlEnabled = await mysqlSync.init({
+    host: config.mysqlHost,
+    port: config.mysqlPort,
+    user: config.mysqlUser,
+    password: config.mysqlPassword,
+    database: config.mysqlDatabase,
+  });
+
   return {
     config,
     db,
@@ -47,6 +58,8 @@ function createContainer(env = process.env) {
     settingsStore,
     uploadService,
     chunkService,
+    mysqlSync,
+    mysqlEnabled,
   };
 }
 

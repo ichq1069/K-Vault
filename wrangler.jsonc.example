@@ -1,0 +1,28 @@
+{
+  "name": "k-vault",
+  "compatibility_date": "2024-01-01",
+  "pages_build_output_dir": "dist",
+  
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "k-vault-d1",
+      "database_id": "<YOUR_D1_DATABASE_ID>",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "kv_namespaces": [
+    {
+      "binding": "img_url",
+      "id": "<YOUR_KV_NAMESPACE_ID>",
+      "preview_id": "<YOUR_PREVIEW_KV_NAMESPACE_ID>"
+    }
+  ],
+
+  "vars": {
+    "D1_SYNC_MODE": "bidirectional",
+    "TG_Bot_Token": "",
+    "TG_Chat_ID": ""
+  }
+}

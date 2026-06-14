@@ -1106,309 +1106,52 @@ function createApp() {
       return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
     }
 
-    if (!auth.authenticated) {
-      guestService.incrementUsage(c.req.raw);
-    }
-
-    return uploadSuccessResponse(c, result);
-  });
-
-  app.post('/api/upload-from-url', async (c) => {
-    const { authService, guestService, uploadService } = getServices(c);
-    const auth = authService.checkAuthentication(c.req.raw);
-    const payload = await c.req.json().catch(() => ({}));
-
-    if (!payload.url) {
-      return jsonError(c, 400, 'URL_REQUIRED', 'url is required.', 'Missing request body field "url".');
-    }
-
-    if (!auth.authenticated) {
-      const guestCheck = guestService.checkUploadAllowed(c.req.raw, 0);
-      if (!guestCheck.allowed) {
-        return jsonError(c, guestCheck.status || 403, 'GUEST_REJECTED', 'Guest upload is not allowed.', guestCheck.reason);
-      }
-    }
-
-    let result;
-    try {
-      result = await uploadService.uploadFromUrl({
-        url: payload.url,
-        storageMode: asString(payload.storageMode || payload.storage),
-        storageId: asString(payload.storageId || payload.storage_config_id),
-        folderPath: normalizeFolderPath(payload.folderPath || payload.folder || ''),
-        maxBytes: Math.min(container.config.uploadSmallFileThreshold, container.config.uploadMaxSize),
+    // Sync to MySQL
+    const { mysqlSync } = container;
+    if (mysqlSync?.isEnabled()) {
+      const mysqlFileData = {
+        id: result.file.id,
+        storageType: result.file.storage_type,
+        storageKey: result.file.storage_key,
+        fileName: result.file.file_name,
+        fileSize: result.file.file_size,
+        mimeType: result.file.mime_type,
+        folderPath: result.file.folder_path,
+        createdAt: result.file.created_at,
+        updatedAt: result.file.updated_at,
+        ...result.file.metadata,
+      };
+      mysqlSync.syncFileWrite(mysqlFileData, 'api-upload').catch((err) => {
+        console.warn('MySQL sync failed for upload:', err.message);
       });
-    } catch (error) {
-      const normalized = normalizeUploadError(c, error, 502);
-      return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
     }
 
     if (!auth.authenticated) {
       guestService.incrementUsage(c.req.raw);
     }
 
+    // Sync to MySQL
+    const { mysqlSync } = container;
+    if (mysqlSync?.isEnabled()) {
+      const mysqlFileData = {
+        id: result.file.id,
+        storageType: result.file.storage_type,
+        storageKey: result.file.storage_key,
+        fileName: result.file.file_name,
+        fileSize: result.file.file_size,
+        mimeType: result.file.mime_type,
+        folderPath: result.file.folder_path,
+        createdAt: result.file.created_at,
+        updatedAt: result.file.updated_at,
+        ...result.file.metadata,
+      };
+      mysqlSync.syncFileWrite(mysqlFileData, 'api-upload-url').catch((err) => {
+        console.warn('MySQL sync failed for upload-from-url:', err.message);
+      });
+    }
+
     return uploadSuccessResponse(c, result);
   });
-
-  // --- Chunk upload ---
-  app.post('/api/chunked-upload/init', async (c) => {
-    const { authService, chunkService } = getServices(c);
-    const auth = authService.checkAuthentication(c.req.raw);
-    if (!auth.authenticated && authService.isAuthRequired()) {
-      return jsonError(c, 403, 'GUEST_CHUNK_DISABLED', 'Guest users cannot use chunk upload.', 'Login required for chunk uploads.');
-    }
-
-    const body = await c.req.json().catch(() => ({}));
-    const fileSize = Number(body.fileSize || 0);
-    const totalChunks = Number(body.totalChunks || 0);
-
-    if (!body.fileName || !fileSize || !totalChunks) {
-      return jsonError(c, 400, 'MISSING_PARAMS', 'Missing required parameters.', 'fileName, fileSize and totalChunks are required.');
-    }
-
-    if (fileSize > container.config.uploadMaxSize) {
-      return jsonError(
-        c,
-        413,
-        'FILE_TOO_LARGE',
-        'File exceeds upload size limit.',
-        `Upload limit is ${Math.floor(container.config.uploadMaxSize / 1024 / 1024)}MB.`
-      );
-    }
-
-    const storageMode = asString(body.storageMode);
-    const storageModeForLimit = storageMode || container.config.bootstrapDefaultStorage?.type || 'telegram';
-    const uploadLimit = getUploadLimits()[storageModeForLimit];
-    if (uploadLimit) {
-      if (fileSize > uploadLimit.maxBytes) {
-        return jsonError(
-          c,
-          413,
-          'STORAGE_FILE_TOO_LARGE',
-          'File exceeds selected storage limit.',
-          uploadLimit.message || `Selected storage limit is ${Math.floor(uploadLimit.maxBytes / 1024 / 1024)}MB.`
-        );
-      }
-      if (fileSize > uploadLimit.directThreshold && uploadLimit.supportsChunkUpload === false) {
-        return jsonError(
-          c,
-          400,
-          'STORAGE_CHUNK_UNSUPPORTED',
-          'Selected storage does not support chunk upload.',
-          uploadLimit.message || 'Choose another storage backend for this file size.'
-        );
-      }
-    }
-
-    const init = chunkService.initTask({
-      fileName: body.fileName,
-      fileSize,
-      fileType: body.fileType,
-      totalChunks,
-      storageMode,
-      storageId: asString(body.storageId),
-      folderPath: normalizeFolderPath(body.folderPath || body.folder || ''),
-    });
-
-    return c.json({ success: true, ...init });
-  });
-
-  app.get('/api/chunked-upload/init', (c) => {
-    const { chunkService } = getServices(c);
-    const uploadId = c.req.query('uploadId');
-    if (!uploadId) return jsonError(c, 400, 'UPLOAD_ID_REQUIRED', 'uploadId is required.', 'Query parameter uploadId is missing.');
-
-    const task = chunkService.getTask(uploadId);
-    if (!task) return jsonError(c, 404, 'UPLOAD_TASK_NOT_FOUND', 'Upload task not found.', 'uploadId not found or expired.');
-
-    return c.json({ success: true, task });
-  });
-
-  app.post('/api/chunked-upload/chunk', async (c) => {
-    const { authService, chunkService } = getServices(c);
-    const unauthorized = authService.isAuthRequired() ? requireAuth(c) : null;
-    if (unauthorized) return unauthorized;
-
-    const body = await c.req.parseBody();
-    const uploadId = asString(body.uploadId);
-    const chunkIndex = Number(body.chunkIndex);
-    const chunk = body.chunk;
-
-    if (!uploadId || Number.isNaN(chunkIndex) || !(chunk instanceof File)) {
-      return jsonError(c, 400, 'MISSING_PARAMS', 'Missing required parameters.', 'uploadId, chunkIndex and chunk are required.');
-    }
-
-    const buffer = await chunk.arrayBuffer();
-    chunkService.saveChunk({ uploadId, chunkIndex, buffer });
-
-    return c.json({ success: true, chunkIndex });
-  });
-
-  app.post('/api/chunked-upload/complete', async (c) => {
-    const { authService, chunkService } = getServices(c);
-    const unauthorized = authService.isAuthRequired() ? requireAuth(c) : null;
-    if (unauthorized) return unauthorized;
-
-    const body = await c.req.json().catch(() => ({}));
-    if (!body.uploadId) return jsonError(c, 400, 'UPLOAD_ID_REQUIRED', 'uploadId is required.', 'Request body uploadId is missing.');
-
-    let result;
-    try {
-      result = await chunkService.complete(body.uploadId);
-    } catch (error) {
-      const normalized = normalizeUploadError(c, error, 502);
-      return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
-    }
-
-    return c.json({
-      success: true,
-      src: result.src,
-      fileName: result.file.file_name,
-      fileSize: result.file.file_size,
-      fileId: result.file.id,
-      folderPath: result.file.metadata?.folderPath || '',
-    });
-  });
-
-  // --- File retrieval ---
-  app.get('/api/file-info/:id', (c) => {
-    const { fileRepo } = getServices(c);
-    const id = decodeURIComponent(c.req.param('id'));
-    const file = fileRepo.getById(id);
-
-    if (!file) {
-      return jsonError(c, 404, 'FILE_NOT_FOUND', 'File not found.', `File "${id}" does not exist.`, false, { fileId: id });
-    }
-
-    return c.json({
-      success: true,
-      fileId: file.id,
-      key: file.id,
-      fileName: file.file_name,
-      originalName: file.file_name,
-      fileSize: file.file_size,
-      uploadTime: file.created_at,
-      storageType: file.storage_type,
-      listType: file.list_type,
-      label: file.label,
-      liked: Boolean(file.liked),
-      folderPath: file.metadata?.folderPath || '',
-    });
-  });
-
-  app.get('/file/:id', async (c) => {
-    const { uploadService, storageRepo } = getServices(c);
-    const id = decodeURIComponent(c.req.param('id'));
-    const range = c.req.header('range');
-
-    // Handle signed Telegram file IDs (tgs_ prefix)
-    if (id.startsWith('tgs_')) {
-      try {
-        return await handleSignedTelegramFile(id, range, storageRepo, c);
-      } catch (error) {
-        console.error('signed telegram file proxy error:', error);
-        return c.text(`Signed file proxy error: ${error?.message || 'Unknown error'}`, 502);
-      }
-    }
-
-    try {
-      const result = await uploadService.getFileResponse(id, range);
-      if (!result) {
-        return c.text('File not found', 404);
-      }
-
-      const upstream = result.response;
-      const headers = buildFileProxyHeaders(result, upstream.headers);
-
-      return new Response(upstream.body, {
-        status: upstream.status,
-        statusText: upstream.statusText,
-        headers,
-      });
-    } catch (error) {
-      console.error('file proxy route error:', error);
-      return c.text(`File proxy error: ${error?.message || 'Unknown error'}`, 502);
-    }
-  });
-
-  app.options('/file/:id', (c) => c.body(null, 204));
-  app.on('HEAD', '/file/:id', async (c) => {
-    const { uploadService, storageRepo } = getServices(c);
-    const id = decodeURIComponent(c.req.param('id'));
-    const range = c.req.header('range');
-
-    if (id.startsWith('tgs_')) {
-      try {
-        return await handleSignedTelegramFile(id, range, storageRepo, c, true);
-      } catch (error) {
-        console.error('signed telegram file HEAD error:', error);
-        return c.body(null, 502);
-      }
-    }
-
-    try {
-      const result = await uploadService.getFileResponse(id, range);
-      if (!result) {
-        return c.body(null, 404);
-      }
-
-      const upstream = result.response;
-      const headers = buildFileProxyHeaders(result, upstream.headers);
-
-      return new Response(null, {
-        status: upstream.status,
-        statusText: upstream.statusText,
-        headers,
-      });
-    } catch (error) {
-      console.error('file proxy HEAD route error:', error);
-      return c.body(null, 502, {
-        'X-File-Proxy-Error': String(error?.message || 'Unknown error').slice(0, 200),
-      });
-    }
-  });
-
-  app.get('/share/:id', async (c) => {
-    const { uploadService } = getServices(c);
-    const fileId = decodeURIComponent(c.req.param('id'));
-    const expiresAt = Number(c.req.query('exp') || 0);
-    const signature = c.req.query('sig') || '';
-    const range = c.req.header('range');
-
-    if (!Number.isFinite(expiresAt) || expiresAt <= 0) {
-      return c.text('Invalid share expiry.', 400);
-    }
-    if (Date.now() > expiresAt) {
-      return c.text('Share link expired.', 410);
-    }
-
-    const secret = container.config.sessionSecret || container.config.configEncryptionKey;
-    if (!verifyShareSignature({ fileId, expiresAt, signature, secret })) {
-      return c.text('Invalid share signature.', 403);
-    }
-
-    try {
-      const result = await uploadService.getFileResponse(fileId, range);
-      if (!result) {
-        return c.text('File not found', 404);
-      }
-
-      const upstream = result.response;
-      const headers = buildFileProxyHeaders(result, upstream.headers);
-      headers.set('Cache-Control', 'private, max-age=60');
-
-      return new Response(upstream.body, {
-        status: upstream.status,
-        statusText: upstream.statusText,
-        headers,
-      });
-    } catch (error) {
-      console.error('share proxy route error:', error);
-      return c.text(`Share proxy error: ${error?.message || 'Unknown error'}`, 502);
-    }
-  });
-
-  app.options('/share/:id', (c) => c.body(null, 204));
 
   app.post('/api/share/sign', async (c) => {
     const unauthorized = requireAuth(c);
@@ -1647,6 +1390,16 @@ function createApp() {
       for (const fileId of fileIds) {
         await uploadService.deleteFile(fileId);
       }
+
+      // Sync deletions to MySQL
+      const { mysqlSync } = container;
+      if (mysqlSync?.isEnabled()) {
+        for (const fileId of fileIds) {
+          mysqlSync.syncFileDelete(fileId, 'api-delete-folder').catch((err) => {
+            console.warn('MySQL sync failed for folder delete:', err.message);
+          });
+        }
+      }
     }
 
     const result = fileRepo.deleteFolder(path, { recursive });
@@ -1738,6 +1491,19 @@ function createApp() {
       return jsonError(c, 404, 'FILE_NOT_FOUND', 'File not found.', `File "${id}" does not exist.`);
     }
 
+    // Sync to MySQL
+    const { mysqlSync } = container;
+    if (mysqlSync?.isEnabled()) {
+      const mysqlFileData = {
+        id: updated.id,
+        fileName: updated.file_name,
+        updatedAt: updated.updated_at || Date.now(),
+      };
+      mysqlSync.syncFileWrite(mysqlFileData, 'api-rename').catch((err) => {
+        console.warn('MySQL sync failed for rename:', err.message);
+      });
+    }
+
     return c.json({
       success: true,
       file: {
@@ -1765,6 +1531,16 @@ function createApp() {
     for (const id of ids) {
       const result = await uploadService.deleteFile(id);
       if (result.deleted) deleted += 1;
+    }
+
+    // Sync deletions to MySQL
+    const { mysqlSync } = container;
+    if (mysqlSync?.isEnabled()) {
+      for (const id of ids) {
+        mysqlSync.syncFileDelete(id, 'api-delete-batch').catch((err) => {
+          console.warn('MySQL sync failed for delete-batch:', err.message);
+        });
+      }
     }
 
     return c.json({
@@ -1840,6 +1616,14 @@ function createApp() {
 
     if (!result.deleted) {
       return jsonError(c, 404, 'FILE_NOT_FOUND', 'File not found.', `File "${id}" does not exist.`);
+    }
+
+    // Sync deletion to MySQL
+    const { mysqlSync } = container;
+    if (mysqlSync?.isEnabled()) {
+      mysqlSync.syncFileDelete(id, 'api-delete').catch((err) => {
+        console.warn('MySQL sync failed for delete:', err.message);
+      });
     }
 
     return c.json({ success: true, message: 'File deleted.', fileId: id });
@@ -2021,6 +1805,82 @@ function createApp() {
       },
       reply,
     });
+  });
+
+  // MySQL Management API
+  app.get('/api/mysql/status', (c) => {
+    const { mysqlSync } = container;
+    return c.json({
+      enabled: mysqlSync?.isEnabled() || false,
+      host: container.config.mysqlHost || '',
+      database: container.config.mysqlDatabase || '',
+    });
+  });
+
+  app.get('/api/mysql/files', async (c) => {
+    const { mysqlSync } = container;
+    if (!mysqlSync?.isEnabled()) {
+      return c.json({ error: 'MySQL not configured' }, 501);
+    }
+
+    const page = Number(c.req.query('page') || 1);
+    const limit = Math.min(Number(c.req.query('limit') || 50), 200);
+    const storageType = c.req.query('storageType') || 'all';
+    const folderPath = c.req.query('folderPath');
+    const search = c.req.query('search') || '';
+
+    const result = await mysqlSync.listFiles({ page, limit, storageType, folderPath, search });
+    return c.json(result);
+  });
+
+  app.get('/api/mysql/files/:id', async (c) => {
+    const { mysqlSync } = container;
+    if (!mysqlSync?.isEnabled()) {
+      return c.json({ error: 'MySQL not configured' }, 501);
+    }
+
+    const fileId = decodeURIComponent(c.req.param('id'));
+    const file = await mysqlSync.getFileById(fileId);
+    if (!file) {
+      return c.json({ error: 'File not found' }, 404);
+    }
+    return c.json(file);
+  });
+
+  app.get('/api/mysql/stats', async (c) => {
+    const { mysqlSync } = container;
+    if (!mysqlSync?.isEnabled()) {
+      return c.json({ error: 'MySQL not configured' }, 501);
+    }
+
+    const stats = await mysqlSync.getStats();
+    return c.json(stats);
+  });
+
+  app.get('/api/mysql/logs', async (c) => {
+    const { mysqlSync } = container;
+    if (!mysqlSync?.isEnabled()) {
+      return c.json({ error: 'MySQL not configured' }, 501);
+    }
+
+    const page = Number(c.req.query('page') || 1);
+    const limit = Math.min(Number(c.req.query('limit') || 50), 200);
+    const result = await mysqlSync.getSyncLogs({ page, limit });
+    return c.json(result);
+  });
+
+  app.delete('/api/mysql/files/:id', async (c) => {
+    const unauthorized = requireAuth(c);
+    if (unauthorized) return unauthorized;
+
+    const { mysqlSync } = container;
+    if (!mysqlSync?.isEnabled()) {
+      return c.json({ error: 'MySQL not configured' }, 501);
+    }
+
+    const fileId = decodeURIComponent(c.req.param('id'));
+    const result = await mysqlSync.syncFileDelete(fileId, 'api-manual');
+    return c.json(result);
   });
 
   app.get('/api/health', (c) => {

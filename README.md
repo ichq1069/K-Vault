@@ -51,6 +51,8 @@
 - **可插拔设置存储（Docker）** - 基础站点设置可使用 `sqlite`（默认）或 Redis 协议后端（Upstash / Redis / KVrocks）
 - **前端路径简化** - 以根路径页面为主流程（`/`、`/admin.html`、`/webdav.html`）
 - **GitHub Actions 镜像构建** - 主分支/Tag 自动构建并推送 `api` + `web` 镜像
+- **D1 数据库支持** - Cloudflare Pages 模式下可使用 D1 关系型数据库替代 KV 存储元数据
+- **KV ↔ D1 双向同步** - 支持数据迁移、自动同步、差异修复
 
 
 ---
@@ -237,6 +239,52 @@ curl -i -X POST "http://localhost:8080/api/auth/login" \
 | `TELEGRAM_METADATA_MODE` | Telegram 元数据写入策略：`off` 关闭后台索引写入，默认写轻量索引 | `off` |
 | `TG_UPLOAD_NOTIFY` | 网页上传成功后，是否额外发送“直链+File ID”通知消息 | `true` |
 | `FILE_URL_SECRET` | 签名直链密钥（不填则回退到 `TG_Bot_Token`） | `random-long-secret` |
+
+### D1 数据库模式（Cloudflare Pages）
+
+项目支持在 Cloudflare Pages 模式下使用 D1 关系型数据库存储元数据，替代 KV 命名空间。
+
+**D1 配置步骤：**
+
+1. **创建 D1 数据库**
+   ```bash
+   npx wrangler d1 create k-vault-d1
+   ```
+   记录返回的 `database_id`
+
+2. **配置 wrangler 绑定**
+   
+   在项目根目录创建 `wrangler.jsonc`：
+   ```json
+   {
+     "d1_databases": [
+       {
+         "binding": "DB",
+         "database_name": "k-vault-d1",
+         "database_id": "<上一步获取的 database_id>"
+       }
+     ]
+   }
+   ```
+
+3. **配置同步策略（可选）**
+   
+   | 变量名 | 说明 | 默认值 |
+   | :--- | :--- | :--- |
+   | `D1_SYNC_MODE` | 同步模式：`bidirectional`（双向）、`kv-to-d1`（单向）、`none`（关闭） | `bidirectional` |
+
+4. **数据迁移**
+   
+   部署后访问管理后台 `/d1` 页面：
+   - 点击"Start Migration"将现有 KV 数据迁移到 D1
+   - 点击"Check Differences"查看 KV 和 D1 差异
+   - 点击"Sync KV → D1"修复不一致数据
+
+**优势：**
+- 关系型查询性能优于 KV 列表扫描
+- 支持复杂查询（文件夹筛选、排序、统计）
+- 双向同步保证数据安全性
+- 可随时回退到 KV 模式
 
 **Webhook 部署步骤：**
 
