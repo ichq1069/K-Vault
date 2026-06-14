@@ -7,6 +7,60 @@ import {
   shouldWriteTelegramMetadata,
 } from '../../utils/telegram.js';
 
+async function postTelegramMessage(text, chatId, messageId, env, apiUrlBase) {
+  const token = env.TG_Bot_Token;
+  const base = env.CUSTOM_BOT_API_URL || 'https://api.telegram.org';
+  const url = `${base}/bot${token}/sendMessage`;
+  const body = {
+    chat_id: chatId,
+    text,
+    disable_web_page_preview: true,
+    parse_mode: 'HTML',
+  };
+  if (messageId) {
+    body.reply_to_message_id = messageId;
+    body.allow_sending_without_reply = true;
+  }
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return { ok: res.ok && data?.ok, data };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function handleTextCommand(message, env) {
+  const text = message.text || '';
+  const cmd = text.toLowerCase().split(' ')[0];
+  const chatId = message.chat.id;
+  const messageId = message.message_id;
+
+  let replyText = '';
+
+  if (['/help', '/帮助'].includes(cmd)) {
+    replyText =
+      '🤖 <b>特控图床机器人</b>\n\n' +
+      '📤 <b>上传文件：</b>直接发送图片或文件至本机器人/群组\n' +
+      '🆘 <b>/help</b>：显示此帮助菜单\n' +
+      '📡 <b>/ping</b>：测试机器人与服务器连接\n' +
+      '📊 <b>/status</b>：查看当前系统状态\n\n' +
+      '💡 提示：上传完成后会自动回复文件直链。';
+  } else if (['/ping', '/ping@', '/ping@' + (env.TG_BOT_USERNAME || '').toLowerCase()].includes(cmd) || cmd.startsWith('/ping')) {
+    replyText = `⚡️ Pong! 机器人连接正常。\n当前时间: ${new Date().toLocaleString('zh-CN')}`;
+  } else if (['/status', '/状态'].includes(cmd)) {
+    replyText = '📊 <b>系统状态：</b>\n✅ 服务器运行中\n✅ Webhook 连接正常\n💾 存储后端: ' + (env.TG_STORAGE_TYPE || 'Telegram') + '\n';
+  } else {
+    return null; // 未知指令，交由后续逻辑处理
+  }
+
+  return postTelegramMessage(replyText, chatId, messageId, env);
+}
+
 export async function onRequestGet(context) {
   const { request } = context;
   const url = new URL(request.url);
@@ -46,6 +100,11 @@ export async function onRequestPost(context) {
 
   const media = getTelegramFileFromMessage(message);
   if (!media) {
+    // Check if it's a text command
+    if (message.text || message.caption?.startsWith('/')) {
+      const result = await handleTextCommand(message, env);
+      if (result) return jsonResponse(result);
+    }
     return jsonResponse({ ok: true, ignored: 'message-without-file' });
   }
 

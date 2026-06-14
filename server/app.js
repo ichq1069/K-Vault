@@ -1727,6 +1727,43 @@ function createApp() {
 
     const media = getTelegramFileFromMessage(message);
     if (!media) {
+      // Handle text commands
+      const text = message.text || '';
+      if (text.startsWith('/')) {
+        const envForCmd = {
+          TG_Bot_Token: telegramConfig.botToken,
+          CUSTOM_BOT_API_URL: telegramConfig.apiBase,
+        };
+        const cmd = text.split(' ')[0].split('@')[0].toLowerCase();
+        let replyText = '';
+
+        if (['/help', '/帮助'].includes(cmd)) {
+          replyText =
+            '🤖 <b>特控图床机器人</b>\n\n' +
+            '📤 <b>上传文件：</b>直接发送图片或文件至本机器人/群组\n' +
+            '🆘 <b>/help</b>：显示此帮助菜单\n' +
+            '📡 <b>/ping</b>：测试机器人与服务器连接\n\n' +
+            '💡 提示：上传完成后会自动回复文件直链。';
+        } else if (['/ping', '/ping@', '/状态'].includes(cmd) || cmd.startsWith('/ping')) {
+          replyText = `⚡️ Pong! 连接正常。\n当前时间: ${new Date().toLocaleString('zh-CN')}`;
+        }
+
+        if (replyText) {
+          const apiUrl = `${envForCmd.CUSTOM_BOT_API_URL || 'https://api.telegram.org'}/bot${envForCmd.TG_Bot_Token}/sendMessage`;
+          fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: message.chat.id,
+              text: replyText,
+              reply_to_message_id: message.message_id,
+              allow_sending_without_reply: true,
+              parse_mode: 'HTML',
+              disable_web_page_preview: true,
+            }),
+          }).catch(console.error);
+        }
+      }
       return c.json({ ok: true, ignored: 'message-without-file' });
     }
 
