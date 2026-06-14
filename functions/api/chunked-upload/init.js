@@ -41,7 +41,7 @@ export async function onRequestPost(context) {
     const validModes = ['telegram', 'r2', 's3', 'discord', 'huggingface', 'webdav', 'github'];
     const normalizedStorage = validModes.includes(storageMode) ? storageMode : 'telegram';
 
-    const validation = validateChunkUpload(normalizedStorage, normalizedFileSize);
+    const validation = validateChunkUpload(normalizedStorage, normalizedFileSize, env);
     if (!validation.ok) {
       return jsonResponse({ error: validation.message, code: validation.code }, validation.status);
     }
@@ -131,7 +131,7 @@ function generateUploadId() {
   return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function validateChunkUpload(storageMode, fileSize) {
+function validateChunkUpload(storageMode, fileSize, env) {
   if (fileSize > MAX_FILE_SIZE) {
     return {
       ok: false,
@@ -141,12 +141,17 @@ function validateChunkUpload(storageMode, fileSize) {
     };
   }
 
-  if (storageMode === 'telegram' && fileSize > TELEGRAM_WEB_UPLOAD_LIMIT) {
+  const isCustomApi = env?.CUSTOM_BOT_API_URL && env.CUSTOM_BOT_API_URL !== 'https://api.telegram.org';
+  const effectiveTelegramLimit = isCustomApi ? 2 * 1024 * 1024 * 1024 : TELEGRAM_WEB_UPLOAD_LIMIT;
+
+  if (storageMode === 'telegram' && fileSize > effectiveTelegramLimit) {
     return {
       ok: false,
       status: 400,
       code: 'TELEGRAM_CHUNK_UNSUPPORTED',
-      message: 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/WebDAV/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
+      message: isCustomApi
+        ? `Custom Bot API detected, large file upload enabled.`
+        : 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/WebDAV/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
     };
   }
 

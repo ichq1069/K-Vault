@@ -60,7 +60,7 @@ export async function onRequestPost(context) {
     }
 
     const storageMode = String(formData.get("storageMode") || "telegram").toLowerCase();
-    const uploadValidation = validateDirectUpload(storageMode, uploadFile.size);
+    const uploadValidation = validateDirectUpload(storageMode, uploadFile.size, env);
     if (!uploadValidation.ok) {
       return errorResponse(uploadValidation.message, uploadValidation.status);
     }
@@ -143,12 +143,17 @@ function errorResponse(message, status = 500) {
   });
 }
 
-function validateDirectUpload(storageMode, fileSize) {
+function validateDirectUpload(storageMode, fileSize, env) {
+  const isCustomApi = env.CUSTOM_BOT_API_URL && env.CUSTOM_BOT_API_URL !== 'https://api.telegram.org';
+  const telegramMaxBytes = isCustomApi ? 2 * 1024 * 1024 * 1024 : 20 * 1024 * 1024; // 2GB if custom API
+  
   const limits = {
     telegram: {
-      maxBytes: 20 * MB,
+      maxBytes: telegramMaxBytes,
       status: 413,
-      message: "Telegram web upload on Cloudflare Pages is limited to 20MB. Use R2/S3/WebDAV/GitHub for larger browser uploads, or send the file to Telegram and use webhook return links.",
+      message: isCustomApi 
+        ? "Telegram Bot API upload limit is effectively 2GB for custom local bot instances." 
+        : "Telegram web upload on Cloudflare Pages is limited to 20MB. Use R2/S3/WebDAV/GitHub for larger browser uploads, or send the file to Telegram and use webhook return links.",
     },
     discord: {
       maxBytes: 25 * MB,

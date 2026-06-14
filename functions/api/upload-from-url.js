@@ -58,7 +58,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    const storageValidation = validateStorageSize(storageMode, fileSize);
+    const storageValidation = validateStorageSize(storageMode, fileSize, env);
     if (!storageValidation.ok) {
       return jsonResponse({ error: storageValidation.message }, storageValidation.status);
     }
@@ -171,12 +171,17 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-function validateStorageSize(storageMode, fileSize) {
+function validateStorageSize(storageMode, fileSize, env) {
+  const isCustomApi = env?.CUSTOM_BOT_API_URL && env.CUSTOM_BOT_API_URL !== 'https://api.telegram.org';
+  const telegramMax = isCustomApi ? 2 * 1024 * 1024 * 1024 : 20 * 1024 * 1024;
+
   const limits = {
     telegram: {
-      maxBytes: 20 * MB,
+      maxBytes: telegramMax,
       status: 413,
-      message: "Telegram URL upload on Cloudflare Pages is limited to 20MB. Use R2/S3/WebDAV/GitHub for larger files.",
+      message: isCustomApi
+        ? "Custom Bot API detected, large file upload enabled."
+        : "Telegram URL upload on Cloudflare Pages is limited to 20MB. Use R2/S3/WebDAV/GitHub for larger files.",
     },
     discord: {
       maxBytes: 25 * MB,

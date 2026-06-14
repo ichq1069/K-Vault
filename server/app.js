@@ -454,12 +454,17 @@ function createApp() {
     const directThreshold = Number(container.config.uploadSmallFileThreshold || 20 * mb);
     const maxUploadSize = Number(container.config.uploadMaxSize || 100 * mb);
 
+    const isCustomTelegramApi = container.config.telegramApiBase !== 'https://api.telegram.org';
+    const telegramMax = isCustomTelegramApi ? maxUploadSize : Math.min(maxUploadSize, 50 * mb);
+
     return {
       telegram: {
-        maxBytes: Math.min(maxUploadSize, 50 * mb),
+        maxBytes: telegramMax,
         directThreshold,
         supportsChunkUpload: true,
-        message: 'Telegram Bot API upload is capped at 50MB in the Docker runtime. For larger files, use R2/S3/WebDAV/GitHub or Telegram client + webhook return links.',
+        message: isCustomTelegramApi
+          ? `Large file upload enabled via custom local Bot API. Maximum size is ${Math.floor(maxUploadSize / 1024 / 1024)}MB.`
+          : 'Telegram Bot API upload is capped at 50MB in the Docker runtime. For larger files, use R2/S3/WebDAV/GitHub or Telegram client + webhook return links.',
       },
       r2: {
         maxBytes: maxUploadSize,

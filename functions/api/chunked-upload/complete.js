@@ -54,7 +54,7 @@ export async function onRequestPost(context) {
     }
 
     const chunkBackend = resolveChunkBackend(taskData, env);
-    const completionValidation = validateCompletionTarget(taskData.storageMode || 'telegram', Number(taskData.fileSize || 0));
+    const completionValidation = validateCompletionTarget(taskData.storageMode || 'telegram', Number(taskData.fileSize || 0), env);
     if (!completionValidation.ok) {
       return jsonResponse({ error: completionValidation.message, code: completionValidation.code }, completionValidation.status);
     }
@@ -279,13 +279,18 @@ function getMissingChunks(uploaded, total) {
   return missing;
 }
 
-function validateCompletionTarget(storageMode, fileSize) {
-  if (storageMode === 'telegram' && fileSize > 20 * MB) {
+function validateCompletionTarget(storageMode, fileSize, env) {
+  const isCustomApi = env?.CUSTOM_BOT_API_URL && env.CUSTOM_BOT_API_URL !== 'https://api.telegram.org';
+  const effectiveTelegramLimit = isCustomApi ? 2 * 1024 * 1024 * 1024 : 20 * 1024 * 1024;
+
+  if (storageMode === 'telegram' && fileSize > effectiveTelegramLimit) {
     return {
       ok: false,
       status: 400,
       code: 'TELEGRAM_CHUNK_UNSUPPORTED',
-      message: 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/WebDAV/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
+      message: isCustomApi
+        ? 'Custom Bot API detected, large file upload enabled.'
+        : 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/WebDAV/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
     };
   }
   if (storageMode === 'discord' && fileSize > 25 * MB) {

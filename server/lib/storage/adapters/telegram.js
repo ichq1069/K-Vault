@@ -76,11 +76,11 @@ class TelegramStorageAdapter {
   async upload({ buffer, fileName, mimeType, fileSize }) {
     this.validate();
 
-    // Telegram Bot API practical limits: upload 50MB (default cloud bot api), download 20MB.
-    // We choose stability-first: enforce 50MB upload ceiling here.
-    const maxSize = 50 * 1024 * 1024;
+    const isDefaultApi = this.config.apiBase === 'https://api.telegram.org';
+    const maxSize = isDefaultApi ? 50 * 1024 * 1024 : 2048 * 1024 * 1024; // 2GB for local bot API
+    
     if (fileSize > maxSize) {
-      throw new Error('Telegram upload limit exceeded (50MB).');
+      throw new Error(`Telegram upload limit exceeded (${Math.floor(maxSize / 1024 / 1024)}MB).`);
     }
 
     const { method, field } = pickUploadMethod(mimeType);
