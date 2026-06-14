@@ -19,6 +19,14 @@ import {
 
 const MB = 1024 * 1024;
 
+export async function onRequest(context) {
+  // If GET request, serve SPA (Vue Router handles the view)
+  if (context.request.method === 'GET') {
+    return context.env.ASSETS.fetch(new URL('/index.html', context.request.url));
+  }
+  return onRequestPost(context);
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
