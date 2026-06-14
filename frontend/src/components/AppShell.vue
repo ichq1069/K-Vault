@@ -20,7 +20,7 @@
             <span class="nav-icon">📤</span>
             <span v-if="!sidebarCollapsed" class="nav-text">Upload</span>
           </router-link>
-          <router-link to="/drive" class="nav-item" active-class="active" v-if="authStore.authenticated">
+          <router-link to="/admin" class="nav-item" active-class="active" v-if="authStore.authenticated">
             <span class="nav-icon">📁</span>
             <span v-if="!sidebarCollapsed" class="nav-text">Drive</span>
           </router-link>

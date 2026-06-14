@@ -23,7 +23,7 @@ const routes = [
       { path: '', redirect: '/upload' },
       { path: 'upload', name: 'upload', component: UploadView },
       { path: 'drive', name: 'drive', component: DriveView, meta: { requiresAdmin: true } },
-      { path: 'admin', redirect: '/drive' },
+      { path: 'admin', name: 'admin', component: DriveView, meta: { requiresAdmin: true } },
       { path: 'storage', name: 'storage', component: StorageView, meta: { requiresAdmin: true } },
       { path: 'mysql', name: 'mysql', component: MySQLView, meta: { requiresAdmin: true } },
       { path: 'd1', name: 'd1', component: D1View, meta: { requiresAdmin: true } },
