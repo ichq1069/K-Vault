@@ -80,7 +80,7 @@ class GitHubStorageAdapter {
   authHeaders(extra = {}, overrideAccept = null) {
     const headers = {
       Authorization: `Bearer ${this.config.token}`,
-      'User-Agent': 'k-vault-storage-adapter',
+      'User-Agent': '特控tele-storage-adapter',
       Accept: overrideAccept || 'application/vnd.github+json',
       ...extra,
     };
@@ -161,7 +161,7 @@ class GitHubStorageAdapter {
   async uploadViaContents({ storageKey, buffer, fileName }) {
     const maxSize = 20 * 1024 * 1024;
     if (buffer.byteLength > maxSize) {
-      throw new Error('GitHub Contents mode upload limit exceeded (20MB practical cap in K-Vault).');
+      throw new Error('GitHub Contents mode upload limit exceeded (20MB practical cap in 特控tele).');
     }
 
     const pathInRepo = this.contentsPath(storageKey || fileName);
@@ -171,7 +171,7 @@ class GitHubStorageAdapter {
 
     const existing = await this.getContentsMetadata(pathInRepo);
     const payload = {
-      message: `k-vault upload: ${pathInRepo}`,
+      message: `特控tele upload: ${pathInRepo}`,
       content: Buffer.from(buffer).toString('base64'),
     };
     if (this.config.branch) payload.branch = this.config.branch;
@@ -227,7 +227,7 @@ class GitHubStorageAdapter {
     if (!existing?.sha) return true;
 
     const payload = {
-      message: `k-vault delete: ${pathInRepo}`,
+      message: `特控tele delete: ${pathInRepo}`,
       sha: existing.sha,
     };
     if (this.config.branch) payload.branch = this.config.branch;
@@ -267,7 +267,7 @@ class GitHubStorageAdapter {
 
     if (response.status === 404) {
       if (!createIfMissing) return null;
-      return this.createRelease('k-vault-storage');
+      return this.createRelease('特控tele-storage');
     }
     if (!response.ok) {
       const detail = await parseErrorBody(response);

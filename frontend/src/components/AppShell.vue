@@ -5,7 +5,7 @@
       <div class="sidebar-header">
         <div class="logo">
           <span class="logo-icon">⬡</span>
-          <span v-if="!sidebarCollapsed" class="logo-text">K-Vault</span>
+          <span v-if="!sidebarCollapsed" class="logo-text">特控tele</span>
         </div>
         <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
           <span v-if="!sidebarCollapsed">◀</span>
@@ -122,7 +122,7 @@ const pageTitle = computed(() => {
     d1: 'D1 Database',
     status: 'System Status',
   };
-  return titles[route.name] || 'K-Vault';
+  return titles[route.name] || '特控tele';
 });
 
 function formatSize(bytes = 0) {

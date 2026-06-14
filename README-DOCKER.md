@@ -1,4 +1,4 @@
-# K-Vault Docker 运行指南（中文）
+# 特控tele Docker 运行指南（中文）
 
 English version: [README-DOCKER-EN.md](README-DOCKER-EN.md)
 
@@ -159,9 +159,9 @@ curl -i -X POST "http://localhost:8080/api/auth/login" \
 
 为降低多网盘适配维护成本，推荐：
 
-1. K-Vault 负责上传体验、直链与后台管理
+1. 特控tele 负责上传体验、直链与后台管理
 2. alist/openlist 负责上游多盘聚合
-3. K-Vault 通过 WebDAV 作为挂载入口接入聚合层
+3. 特控tele 通过 WebDAV 作为挂载入口接入聚合层
 
 优势：
 
@@ -360,7 +360,7 @@ node scripts/storage-regression.js
 - Docker 模式不受 Cloudflare 运行时配额约束（但会受你服务器资源限制）。
 - 新镜像工作流：`.github/workflows/docker-image.yml`
   - PR：仅构建
-  - main/tag push：构建并推送 `k-vault-api` + `k-vault-web` 到 GHCR
+  - main/tag push：构建并推送 `特控tele-api` + `特控tele-web` 到 GHCR
 
 ---
 

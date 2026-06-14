@@ -2,7 +2,7 @@
 
 ## Introduction
 
-为 K-Vault 项目增加 Cloudflare D1 数据库支持，实现在 Cloudflare Pages 模式下从 KV 元数据存储升级到 D1 关系型数据库的平滑切换。同时提供操作方法界面和数据自动同步能力。
+为 特控tele 项目增加 Cloudflare D1 数据库支持，实现在 Cloudflare Pages 模式下从 KV 元数据存储升级到 D1 关系型数据库的平滑切换。同时提供操作方法界面和数据自动同步能力。
 
 ## Glossary
 

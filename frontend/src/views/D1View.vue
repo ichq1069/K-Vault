@@ -30,7 +30,7 @@
       <div class="setup-steps">
         <h4>Setup Guide:</h4>
         <ol>
-          <li>Create D1 database: <code>npx wrangler d1 create k-vault-d1</code></li>
+          <li>Create D1 database: <code>npx wrangler d1 create 特控tele-d1</code></li>
           <li>Add binding to <code>wrangler.jsonc</code></li>
           <li>Redeploy your Cloudflare Pages project</li>
         </ol>

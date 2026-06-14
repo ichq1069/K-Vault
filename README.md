@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="logo.png" alt="K-Vault Logo" width="140">
+<img src="logo.png" alt="特控tele Logo" width="140">
 
-# K-Vault
+# 特控tele
 
 > 免费图片/文件托管解决方案，支持 Cloudflare Pages + Docker 双模部署，并兼容多种存储后端
 
@@ -10,9 +10,9 @@
 
 <br>
 
-![GitHub stars](https://img.shields.io/github/stars/katelya77/K-Vault?style=flat-square)
-![GitHub forks](https://img.shields.io/github/forks/katelya77/K-Vault?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/katelya77/K-Vault?style=flat-square)
+![GitHub stars](https://img.shields.io/github/stars/katelya77/特控tele?style=flat-square)
+![GitHub forks](https://img.shields.io/github/forks/katelya77/特控tele?style=flat-square)
+![GitHub license](https://img.shields.io/github/license/katelya77/特控tele?style=flat-square)
 
 </div>
 
@@ -102,7 +102,7 @@
 
 3. **绑定 KV（图片管理/分片任务必需）**
    - 进入 Cloudflare Dashboard → `Workers 和 Pages` → `KV`
-   - 创建命名空间，例如 `k-vault`
+   - 创建命名空间，例如 `特控tele`
    - 回到 Pages 项目 → `设置` → `函数` → `KV 命名空间绑定`
    - 变量名必须填 `img_url`
 
@@ -136,7 +136,7 @@ npm run pages:deploy -- --project-name <你的 Pages 项目名>
 - `The detected framework ("Hono") cannot be automatically configured`：把 Pages 项目误配成了 `npx wrangler deploy`。删除 Deploy command，使用上表的 Pages 构建设置。
 - 构建成功但页面 404：Build output directory 填错了，应为 `frontend/dist`，不是 `dist`。
 - `vite: not found`：说明前端依赖没有安装。使用最新仓库的 `npm run build`，不要只在根目录手写 `npm --prefix frontend run build`。
-- R2 `invalid jurisdiction`：这是 Cloudflare 绑定元数据问题，不是 K-Vault 上传代码问题，按 [Cloudflare Pages R2 绑定排查](docs/cloudflare-pages-r2.md) 处理。
+- R2 `invalid jurisdiction`：这是 Cloudflare 绑定元数据问题，不是 特控tele 上传代码问题，按 [Cloudflare Pages R2 绑定排查](docs/cloudflare-pages-r2.md) 处理。
 
 ### 第三步：Docker 自托管部署（可选）
 
@@ -248,7 +248,7 @@ curl -i -X POST "http://localhost:8080/api/auth/login" \
 
 1. **创建 D1 数据库**
    ```bash
-   npx wrangler d1 create k-vault-d1
+   npx wrangler d1 create 特控tele-d1
    ```
    记录返回的 `database_id`
 
@@ -260,7 +260,7 @@ curl -i -X POST "http://localhost:8080/api/auth/login" \
      "d1_databases": [
        {
          "binding": "DB",
-         "database_name": "k-vault-d1",
+         "database_name": "特控tele-d1",
          "database_id": "<上一步获取的 database_id>"
        }
      ]
@@ -318,7 +318,7 @@ curl -X POST "http://127.0.0.1:8081/bot<YOUR_BOT_TOKEN>/setWebhook" \
 curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 ```
 
-3. 在群/频道发送图片或文件后，查看 Cloudflare Pages Functions 日志。K-Vault 的 webhook POST 响应会包含：
+3. 在群/频道发送图片或文件后，查看 Cloudflare Pages Functions 日志。特控tele 的 webhook POST 响应会包含：
    - `directLink`：生成的 `/file/...` 链接
    - `reply.ok`：是否成功调用 `sendMessage`
    - `reply.reason`：失败时的 Telegram API 描述或跳过原因
@@ -350,7 +350,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 启用图片管理功能需要配置 KV：
 
 1. 进入 Cloudflare Dashboard → `Workers 和 Pages` → `KV`
-2. 点击 `创建命名空间`，命名为 `k-vault`
+2. 点击 `创建命名空间`，命名为 `特控tele`
 3. 进入 Pages 项目 → `设置` → `函数` → `KV 命名空间绑定`
 4. 添加绑定：变量名 `img_url`，选择创建的命名空间
 5. 重新部署项目
@@ -394,7 +394,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 
 1. **创建存储桶**
    - Cloudflare Dashboard → `R2 对象存储` → `创建存储桶`
-   - 命名为 `k-vault-files`
+   - 命名为 `特控tele-files`
 
 2. **绑定到项目**
    - Pages 项目 → `设置` → `函数` → `R2 存储桶绑定`
@@ -519,7 +519,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 | `WEBDAV_PASSWORD` | WebDAV 密码（Basic 认证） | `your-password` |
 | `WEBDAV_BEARER_TOKEN` | Bearer Token（与用户名/密码二选一） | `eyJhbGciOi...` |
 | `WEBDAV_TOKEN` | Bearer Token 兼容变量名（可选） | `eyJhbGciOi...` |
-| `WEBDAV_ROOT_PATH` | 可选，WebDAV 根目录前缀 | `k-vault/uploads` |
+| `WEBDAV_ROOT_PATH` | 可选，WebDAV 根目录前缀 | `特控tele/uploads` |
 
 **部署步骤：**
 
@@ -549,7 +549,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 | `GITHUB_REPO` | 目标仓库（`owner/repo`） | `yourname/kvault-files` |
 | `GITHUB_MODE` | 存储模式：`releases` / `contents` | `releases` |
 | `GITHUB_PREFIX` | 可选，仓库内路径前缀 | `uploads` |
-| `GITHUB_RELEASE_TAG` | 可选，releases 模式固定标签 | `k-vault-storage` |
+| `GITHUB_RELEASE_TAG` | 可选，releases 模式固定标签 | `特控tele-storage` |
 | `GITHUB_BRANCH` | 可选，contents 模式目标分支 | `main` |
 | `GITHUB_API_BASE` | 可选，GitHub API 基址（企业版时可改） | `https://api.github.com` |
 
@@ -618,7 +618,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 | :--- | :--- | :--- |
 | `PORT` | 容器内 API 服务端口 | `8787` |
 | `DATA_DIR` | 数据目录 | `/app/data` |
-| `DB_PATH` | SQLite 数据库路径 | `/app/data/k-vault.db` |
+| `DB_PATH` | SQLite 数据库路径 | `/app/data/特控tele.db` |
 | `CHUNK_DIR` | 分片临时目录 | `/app/data/chunks` |
 | `CONFIG_ENCRYPTION_KEY` | 用于加密存储配置密钥（必填） | - |
 | `SESSION_SECRET` | 会话/签名密钥（建议与加密密钥不同） | - |
@@ -628,7 +628,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 | `DEFAULT_STORAGE_TYPE` | 启动时默认存储类型（`telegram`/`r2`/`s3`/`discord`/`huggingface`/`webdav`/`github`） | `telegram` |
 | `SETTINGS_STORE` | 基础设置存储后端（`sqlite` 或 `redis`） | `sqlite` |
 | `SETTINGS_REDIS_URL` | Redis URL（Upstash/Redis/KVrocks，`SETTINGS_STORE=redis` 时必填） | - |
-| `SETTINGS_REDIS_PREFIX` | Redis 键前缀 | `k-vault` |
+| `SETTINGS_REDIS_PREFIX` | Redis 键前缀 | `特控tele` |
 | `SETTINGS_REDIS_CONNECT_TIMEOUT_MS` | Redis 连接/心跳超时（毫秒） | `5000` |
 | `WEB_PORT` | `docker compose` 对外 Web 端口 | `8080` |
 
@@ -823,7 +823,7 @@ kvault() {
 - [Docker 镜像工作流](.github/workflows/docker-image.yml)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Telegram Bot API Server（自部署）](https://github.com/tdlib/telegram-bot-api)
-- [问题反馈](https://github.com/katelya77/K-Vault/issues)
+- [问题反馈](https://github.com/katelya77/特控tele/issues)
 
 ---
 
@@ -843,4 +843,4 @@ MIT License
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=katelya77/K-Vault&type=Date)](https://star-history.com/#katelya77/K-Vault&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=katelya77/特控tele&type=Date)](https://star-history.com/#katelya77/特控tele&Date)

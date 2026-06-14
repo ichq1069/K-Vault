@@ -5,7 +5,7 @@ Updated: 2026-06-14
 
 ## Description
 
-为 K-Vault 项目增加 Cloudflare D1 数据库支持，实现：
+为 特控tele 项目增加 Cloudflare D1 数据库支持，实现：
 1. Cloudflare Pages 模式下从 KV 元数据存储平滑切换到 D1
 2. 运行时自动检测并切换存储后端
 3. 后台管理界面提供迁移、同步、状态查看操作

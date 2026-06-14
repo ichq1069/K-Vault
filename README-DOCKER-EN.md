@@ -1,4 +1,4 @@
-# K-Vault Docker Runtime Guide
+# 特控tele Docker Runtime Guide
 
 Chinese version: [README-DOCKER.md](README-DOCKER.md)
 
@@ -150,24 +150,24 @@ If the R2 binding blocks Pages Functions deployment with `invalid jurisdiction`,
 
 To reduce long-term adapter maintenance, recommended production pattern:
 
-1. K-Vault focuses on:
+1. 特控tele focuses on:
    - Drive UX
    - direct/share links
    - auth/audit/metadata
 2. alist/openlist focuses on:
    - multi-provider aggregation
    - upstream mount/credential complexity
-3. K-Vault connects to alist/openlist through WebDAV adapter as a mounted backend.
+3. 特控tele connects to alist/openlist through WebDAV adapter as a mounted backend.
 
 Suggested deployment:
 
-- Same VPS Docker host (simplest): deploy alist/openlist alongside K-Vault
-- Or independent node: expose WebDAV endpoint securely and connect from K-Vault WebDAV profile
+- Same VPS Docker host (simplest): deploy alist/openlist alongside 特控tele
+- Or independent node: expose WebDAV endpoint securely and connect from 特控tele WebDAV profile
 
 Failure isolation:
 
 - If aggregation layer is unavailable, only that WebDAV profile is unavailable
-- K-Vault site and other storage profiles continue to work
+- 特控tele site and other storage profiles continue to work
 - `/api/status` and Drive adapter cards show degraded state explicitly
 
 ## Networking Notes
@@ -188,7 +188,7 @@ Failure isolation:
 | `DEFAULT_STORAGE_TYPE` | Bootstrap storage type (`telegram`/`r2`/`s3`/`discord`/`huggingface`/`webdav`/`github`) |
 | `SETTINGS_STORE` | `sqlite` (default) or `redis` for basic app settings |
 | `SETTINGS_REDIS_URL` | Redis URL, for Upstash/Redis/KVrocks (required if `SETTINGS_STORE=redis`) |
-| `SETTINGS_REDIS_PREFIX` | Redis key prefix, default `k-vault` |
+| `SETTINGS_REDIS_PREFIX` | Redis key prefix, default `特控tele` |
 | `SETTINGS_REDIS_CONNECT_TIMEOUT_MS` | Redis connect/ping timeout (ms), default `5000` |
 | `TG_BOT_TOKEN` + `TG_CHAT_ID` | Telegram bootstrap storage |
 | `R2_*` / `S3_*` / `DISCORD_*` / `HF_*` | Optional bootstrap configs for existing backends |
@@ -349,10 +349,10 @@ The script covers:
 - Secrets must come from environment variables; do not hard-code.
 - New image workflow is available at `.github/workflows/docker-image.yml`:
   - PR: build only
-  - main/tag push: build and push `k-vault-api` + `k-vault-web` images to GHCR
+  - main/tag push: build and push `特控tele-api` + `特控tele-web` images to GHCR
 - Default image names:
-  - `ghcr.io/<your-org-or-user>/k-vault-api`
-  - `ghcr.io/<your-org-or-user>/k-vault-web`
+  - `ghcr.io/<your-org-or-user>/特控tele-api`
+  - `ghcr.io/<your-org-or-user>/特控tele-web`
 - If your repository is private, make sure GitHub Packages visibility/permissions allow your target platform to pull images.
 
 ## Platform Compatibility Notes
@@ -361,7 +361,7 @@ The script covers:
 
 - Not recommended for current Docker runtime architecture.
 - Main blockers are runtime and persistence model mismatch.
-  - Serverless function request body limit (4.5MB) conflicts with K-Vault upload flow.
+  - Serverless function request body limit (4.5MB) conflicts with 特控tele upload flow.
   - Function file system is read-only except temporary `/tmp`, which does not fit persistent SQLite + chunk files.
 - If deploying to Vercel, only static frontend hosting is practical without major backend refactor.
 

@@ -16,7 +16,7 @@ Options:
   --check                         Validate an existing wrangler.jsonc.
   --write                         Write a wrangler.jsonc from environment or CLI values.
   --config <path>                 Config path. Defaults to ./wrangler.jsonc.
-  --project-name <name>           Cloudflare Pages project name. Defaults to k-vault.
+  --project-name <name>           Cloudflare Pages project name. Defaults to 特控tele.
   --output-dir <path>             Pages build output directory. Defaults to ".".
   --compatibility-date <date>     Workers compatibility date. Defaults to today.
   --kv-id <id>                    KV namespace id for binding img_url.
@@ -47,11 +47,11 @@ function parseArgs(argv) {
   const options = {
     mode: 'print',
     configPath: defaultConfigPath,
-    projectName: process.env.CF_PAGES_PROJECT || process.env.PAGES_PROJECT_NAME || 'k-vault',
+    projectName: process.env.CF_PAGES_PROJECT || process.env.PAGES_PROJECT_NAME || '特控tele',
     outputDir: process.env.PAGES_BUILD_OUTPUT_DIR || '.',
     compatibilityDate: process.env.PAGES_COMPATIBILITY_DATE || todayUtc(),
     kvId: process.env.KV_NAMESPACE_ID || process.env.IMG_URL_KV_NAMESPACE_ID || '',
-    r2Bucket: process.env.R2_BUCKET_NAME || process.env.R2_BUCKET || 'k-vault-files',
+    r2Bucket: process.env.R2_BUCKET_NAME || process.env.R2_BUCKET || '特控tele-files',
     r2Jurisdiction: process.env.R2_BUCKET_JURISDICTION || '',
     allowMissingKv: false,
   };
@@ -170,7 +170,7 @@ function renderJsonc(config, options) {
   }
 
   const lines = [
-    '// Cloudflare Pages configuration for K-Vault.',
+    '// Cloudflare Pages configuration for 特控tele.',
     '// Keep this file in sync with the Pages dashboard. When present, it becomes the source of truth for these settings.',
   ];
 
@@ -257,7 +257,7 @@ function validateConfig(config) {
 
   const kvBindings = Array.isArray(config.kv_namespaces) ? config.kv_namespaces : [];
   if (!kvBindings.some((binding) => binding && binding.binding === 'img_url')) {
-    issues.push('img_url KV binding is not present. K-Vault image metadata and UI config need this binding.');
+    issues.push('img_url KV binding is not present. 特控tele image metadata and UI config need this binding.');
   }
 
   return issues;

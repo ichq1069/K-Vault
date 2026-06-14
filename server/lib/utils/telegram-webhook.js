@@ -211,7 +211,7 @@ function getFileLinkSecrets(env) {
     env?.FILE_URL_SECRET,
     env?.TG_FILE_URL_SECRET,
     env?.TG_Bot_Token,
-    'k-vault-default-secret',
+    '特控tele-default-secret',
     'tgbed-default-secret',
   ];
   return [...new Set(candidates.map((v) => (v == null ? '' : String(v).trim())).filter(Boolean))];

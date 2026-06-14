@@ -475,7 +475,7 @@ function createApp() {
         maxBytes: Math.min(maxUploadSize, 25 * mb),
         directThreshold,
         supportsChunkUpload: true,
-        message: 'Discord upload limit depends on server boost level; K-Vault uses a conservative 25MB default.',
+        message: 'Discord upload limit depends on server boost level; 特控tele uses a conservative 25MB default.',
       },
       huggingface: {
         maxBytes: Math.min(maxUploadSize, 35 * mb),

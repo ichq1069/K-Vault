@@ -23,10 +23,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image_name: k-vault-api
+          - image_name: 特控tele-api
             context: ./server
             file: ./server/Dockerfile
-          - image_name: k-vault-web
+          - image_name: 特控tele-web
             context: .
             file: ./frontend/Dockerfile
 

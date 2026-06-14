@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="logo.png" alt="K-Vault Logo" width="140">
+<img src="logo.png" alt="特控tele Logo" width="140">
 
-# K-Vault
+# 特控tele
 
 > Free image/file hosting solution with dual deployment modes (Cloudflare Pages + Docker), supporting multiple storage backends.
 
@@ -10,9 +10,9 @@
 
 <br>
 
-![GitHub stars](https://img.shields.io/github/stars/katelya77/K-Vault?style=flat-square)
-![GitHub forks](https://img.shields.io/github/forks/katelya77/K-Vault?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/katelya77/K-Vault?style=flat-square)
+![GitHub stars](https://img.shields.io/github/stars/katelya77/特控tele?style=flat-square)
+![GitHub forks](https://img.shields.io/github/forks/katelya77/特控tele?style=flat-square)
+![GitHub license](https://img.shields.io/github/license/katelya77/特控tele?style=flat-square)
 
 </div>
 
@@ -71,9 +71,9 @@ A lightweight workflow note is included in `.github/workflows/pages-deploy.yml`.
 
 Recommended architecture for multi-cloud mounts:
 
-- Use `WebDAV` adapter in K-Vault as a mounted entry.
+- Use `WebDAV` adapter in 特控tele as a mounted entry.
 - Use `alist/openlist` as aggregation layer for other providers.
-- This keeps K-Vault focused on UX/link/auth while reducing adapter maintenance complexity.
+- This keeps 特控tele focused on UX/link/auth while reducing adapter maintenance complexity.
 
 ---
 
@@ -124,7 +124,7 @@ Recommended architecture for multi-cloud mounts:
 
 ### Step 3: Docker Self-host Deployment (Optional)
 
-If you want to run K-Vault on your own VPS/NAS without Cloudflare Pages runtime:
+If you want to run 特控tele on your own VPS/NAS without Cloudflare Pages runtime:
 
 1. Copy environment template:
 
@@ -246,7 +246,7 @@ After enabling this, Telegram files still write a lightweight KV index by defaul
 To enable image management, configure KV:
 
 1. Go to Cloudflare Dashboard 鈫?`Workers and Pages` 鈫?`KV`
-2. Click `Create namespace`, name it `k-vault`
+2. Click `Create namespace`, name it `特控tele`
 3. Go to your Pages project 鈫?`Settings` 鈫?`Functions` 鈫?`KV namespace bindings`
 4. Add binding: variable name `img_url`, choose the namespace you created
 5. Redeploy the project
@@ -257,7 +257,7 @@ Configure R2 to support uploads up to 100MB:
 
 1. **Create a bucket**
    - Cloudflare Dashboard 鈫?`R2 Object Storage` 鈫?`Create bucket`
-   - Name it `k-vault-files`
+   - Name it `特控tele-files`
 
 2. **Bind to the project**
    - Pages project 鈫?`Settings` 鈫?`Functions` 鈫?`R2 bucket bindings`
@@ -267,7 +267,7 @@ Configure R2 to support uploads up to 100MB:
    - `Settings` 鈫?`Environment variables` 鈫?add `USE_R2` = `true`
    - Redeploy
 
-> If redeploy fails with `binding R2_BUCKET of type r2_bucket contains an invalid jurisdiction`, Cloudflare Pages is rejecting the R2 binding metadata before K-Vault code runs. Normal R2 buckets should not set `jurisdiction`; only residency-restricted buckets use `eu` or `fedramp`. Follow [Cloudflare Pages R2 binding troubleshooting](docs/cloudflare-pages-r2.md) to rebuild Production/Preview bindings, or run `npm run pages:r2:doctor -- --check` to validate `wrangler.jsonc`.
+> If redeploy fails with `binding R2_BUCKET of type r2_bucket contains an invalid jurisdiction`, Cloudflare Pages is rejecting the R2 binding metadata before 特控tele code runs. Normal R2 buckets should not set `jurisdiction`; only residency-restricted buckets use `eu` or `fedramp`. Follow [Cloudflare Pages R2 binding troubleshooting](docs/cloudflare-pages-r2.md) to rebuild Production/Preview bindings, or run `npm run pages:r2:doctor -- --check` to validate `wrangler.jsonc`.
 
 ### S3-Compatible Storage (Optional)
 
@@ -419,7 +419,7 @@ Allows non-logged-in users to upload files. Site owners can configure whether it
 | :--- | :--- | :--- |
 | `PORT` | API service port inside container | `8787` |
 | `DATA_DIR` | Data directory | `/app/data` |
-| `DB_PATH` | SQLite database path | `/app/data/k-vault.db` |
+| `DB_PATH` | SQLite database path | `/app/data/特控tele.db` |
 | `CHUNK_DIR` | Chunk temp directory | `/app/data/chunks` |
 | `CONFIG_ENCRYPTION_KEY` | Required key for encrypting storage config secrets | - |
 | `SESSION_SECRET` | Session/signing secret (recommended, separate from encryption key) | - |
@@ -429,7 +429,7 @@ Allows non-logged-in users to upload files. Site owners can configure whether it
 | `DEFAULT_STORAGE_TYPE` | Bootstrap default storage type (`telegram`/`r2`/`s3`/`discord`/`huggingface`) | `telegram` |
 | `SETTINGS_STORE` | Basic app settings backend (`sqlite` or `redis`) | `sqlite` |
 | `SETTINGS_REDIS_URL` | Redis URL for Upstash/Redis/KVrocks (required when `SETTINGS_STORE=redis`) | - |
-| `SETTINGS_REDIS_PREFIX` | Redis key prefix for settings hash | `k-vault` |
+| `SETTINGS_REDIS_PREFIX` | Redis key prefix for settings hash | `特控tele` |
 | `SETTINGS_REDIS_CONNECT_TIMEOUT_MS` | Redis connect/ping timeout in milliseconds | `5000` |
 | `WEB_PORT` | Public web port for `docker compose` | `8080` |
 
@@ -535,7 +535,7 @@ Allows non-logged-in users to upload files. Site owners can configure whether it
 - [Docker Image Workflow](.github/workflows/docker-image.yml)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Telegram Bot API Server (Self-hosted)](https://github.com/tdlib/telegram-bot-api)
-- [Issue Tracker](https://github.com/katelya77/K-Vault/issues)
+- [Issue Tracker](https://github.com/katelya77/特控tele/issues)
 
 ---
 
@@ -555,5 +555,5 @@ MIT License
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=katelya77/K-Vault&type=Date)](https://star-history.com/#katelya77/K-Vault&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=katelya77/特控tele&type=Date)](https://star-history.com/#katelya77/特控tele&Date)
 

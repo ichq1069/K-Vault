@@ -79,11 +79,11 @@ function loadConfig(env = process.env) {
     sessionSecret: normalizeEnvString(env.SESSION_SECRET) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || '',
 
     dataDir,
-    dbPath: env.DB_PATH ? path.resolve(normalizeEnvString(env.DB_PATH)) : path.join(dataDir, 'k-vault.db'),
+    dbPath: env.DB_PATH ? path.resolve(normalizeEnvString(env.DB_PATH)) : path.join(dataDir, '特控tele.db'),
     chunkDir: env.CHUNK_DIR ? path.resolve(normalizeEnvString(env.CHUNK_DIR)) : path.join(dataDir, 'chunks'),
     settingsStore: normalizeEnvString(env.SETTINGS_STORE, 'sqlite').toLowerCase(),
     settingsRedisUrl: normalizeEnvString(env.SETTINGS_REDIS_URL) || normalizeEnvString(env.REDIS_URL) || '',
-    settingsRedisPrefix: normalizeEnvString(env.SETTINGS_REDIS_PREFIX, 'k-vault'),
+    settingsRedisPrefix: normalizeEnvString(env.SETTINGS_REDIS_PREFIX, '特控tele'),
     settingsRedisConnectTimeoutMs: toInt(env.SETTINGS_REDIS_CONNECT_TIMEOUT_MS, 5000),
 
     mysqlHost: normalizeEnvString(env.MYSQL_HOST),

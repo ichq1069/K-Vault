@@ -2,11 +2,11 @@ services:
   api:
     build:
       context: ./server
-    container_name: kvault-api
+    container_name: telectrl-api
     env_file:
       - .env
     volumes:
-      - kvault_data:/app/data
+      - telectrl_data:/app/data
     # expose is internal-only (other services in the same compose network can reach it).
     expose:
       - "8787"
@@ -20,10 +20,10 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: kvault-redis
+    container_name: telectrl-redis
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - kvault_redis:/data
+      - telectrl_redis:/data
     # expose is internal-only (other services in the same compose network can reach it).
     expose:
       - "6379"
@@ -41,7 +41,7 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    container_name: kvault-web
+    container_name: telectrl-web
     depends_on:
       api:
         condition: service_healthy
@@ -51,5 +51,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  kvault_data:
-  kvault_redis:
+  telectrl_data:
+  telectrl_redis:
