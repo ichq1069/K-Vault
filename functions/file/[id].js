@@ -732,11 +732,13 @@ async function getTelegramFilePath(env, fileId) {
   }
 
   try {
+    const officialPath = await tryGetPath('https://api.telegram.org');
+    if (officialPath) return officialPath;
+
     if (env.CUSTOM_BOT_API_URL) {
-      const path = await tryGetPath(env.CUSTOM_BOT_API_URL);
-      if (path) return path;
+      return await tryGetPath(env.CUSTOM_BOT_API_URL);
     }
-    return await tryGetPath('https://api.telegram.org');
+    return null;
   } catch (error) {
     console.error('getTelegramFilePath failed:', error);
     return null;
