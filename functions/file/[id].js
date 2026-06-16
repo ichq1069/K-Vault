@@ -723,14 +723,24 @@ async function findRecordByPrefixes(env, fileId, prefixes = []) {
 }
 
 async function getTelegramFilePath(env, fileId) {
-  try {
-    const url = `${buildTelegramBotApiUrl(env, 'getFile')}?file_id=${encodeURIComponent(fileId)}`;
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) return null;
+  const fileIdParam = encodeURIComponent(fileId);
 
-    const data = await response.json();
-    if (!data?.ok || !data?.result?.file_path) return null;
-    return data.result.file_path;
+  async function tryGetPath(apiBase) {
+    const base = (apiBase || 'https://api.telegram.org').replace(/\/+$/, '');
+    const url = `${base}/bot${env.TG_Bot_Token}/getFile?file_id=${fileIdParam}`;
+    const resp = await fetch(url, { method: 'GET' });
+    if (!resp.ok) return null;
+    const d = await resp.json();
+    if (!d?.ok || !d?.result?.file_path) return null;
+    return d.result.file_path;
+  }
+
+  try {
+    if (env.CUSTOM_BOT_API_URL) {
+      const path = await tryGetPath(env.CUSTOM_BOT_API_URL);
+      if (path) return path;
+    }
+    return await tryGetPath('https://api.telegram.org');
   } catch (error) {
     console.error('getTelegramFilePath failed:', error);
     return null;
