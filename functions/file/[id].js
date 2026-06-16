@@ -5,7 +5,6 @@ import { getWebDAVFile } from '../utils/webdav.js';
 import { getGitHubFile } from '../utils/github.js';
 import {
   buildTelegramBotApiUrl,
-  buildTelegramFileUrl,
   parseSignedTelegramFileId,
   shouldWriteTelegramMetadata,
 } from '../utils/telegram.js';
@@ -290,10 +289,7 @@ async function incrementShareDownloadCount(env, kvKey, metadata = {}) {
 
 function buildFileDownloadUrl(env, filePath) {
   const normalizedPath = String(filePath || "").replace(/^\/+/, "");
-  if (env.CUSTOM_BOT_API_URL) {
-    return `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${normalizedPath}`;
-  }
-  return buildTelegramFileUrl(env, filePath);
+  return `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${normalizedPath}`;
 }
 
 async function cleanTelegramFilePath(filePath) {
