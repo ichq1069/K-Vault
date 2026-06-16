@@ -295,6 +295,8 @@ function buildFileDownloadUrl(env, filePath) {
   }
   return buildTelegramFileUrl(env, filePath);
 }
+
+async function cleanTelegramFilePath(filePath) {
   if (!filePath) return filePath;
   const mediaTypes = ['photos', 'documents', 'videos', 'audio', 'stickers', 'voice', 'animation', 'video_note'];
   for (const type of mediaTypes) {
