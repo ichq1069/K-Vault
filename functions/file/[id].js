@@ -301,11 +301,9 @@ async function cleanTelegramFilePath(filePath) {
   const mediaTypes = ['photos', 'documents', 'videos', 'audio', 'stickers', 'voice', 'animation', 'video_note'];
   for (const type of mediaTypes) {
     const idx = filePath.indexOf(`/${type}/`);
-    if (idx === -1) continue;
-    const before = filePath.substring(0, idx);
-    const lastSlash = before.lastIndexOf('/');
-    const start = lastSlash === -1 ? idx : lastSlash;
-    return filePath.substring(start + 1);
+    if (idx !== -1) {
+      return filePath.substring(idx + 1);
+    }
   }
   return filePath;
 }
