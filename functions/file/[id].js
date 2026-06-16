@@ -4,7 +4,6 @@ import { getHuggingFaceFile } from '../utils/huggingface.js';
 import { getWebDAVFile } from '../utils/webdav.js';
 import { getGitHubFile } from '../utils/github.js';
 import {
-  buildTelegramBotApiUrl,
   parseSignedTelegramFileId,
   shouldWriteTelegramMetadata,
 } from '../utils/telegram.js';
@@ -287,11 +286,6 @@ async function incrementShareDownloadCount(env, kvKey, metadata = {}) {
   await putRecord(env, kvKey, '', { metadata: nextMetadata });
 }
 
-function buildFileDownloadUrl(env, filePath) {
-  const normalizedPath = String(filePath || "").replace(/^\/+/, "");
-  return `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${normalizedPath}`;
-}
-
 async function cleanTelegramFilePath(filePath) {
   if (!filePath) return filePath;
   const mediaTypes = ['photos', 'documents', 'videos', 'audio', 'stickers', 'voice', 'animation', 'video_note'];
@@ -302,6 +296,35 @@ async function cleanTelegramFilePath(filePath) {
     }
   }
   return filePath;
+}
+
+async function fetchFileFromTelegram(env, rawPath, request, customApiFallback) {
+  const cleanPath = cleanTelegramFilePath(rawPath);
+  const rangeHeader = request.headers.get('Range');
+  const fetchHeaders = new Headers();
+  if (rangeHeader) fetchHeaders.set('Range', rangeHeader);
+
+  const officialUrl = `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${cleanPath.replace(/^\/+/, '')}`;
+  let upstream = await fetch(officialUrl, {
+    method: request.method === 'HEAD' ? 'HEAD' : 'GET',
+    headers: fetchHeaders,
+    cf: { cacheTtl: 0, cacheEverything: false },
+  });
+  if (upstream.ok || upstream.status === 206) return upstream;
+
+  if (env.CUSTOM_BOT_API_URL && customApiFallback) {
+    const customBase = env.CUSTOM_BOT_API_URL.replace(/\/+$/, '');
+    const customPath = customApiFallback.replace(/^\/+/, '');
+    const customUrl = `${customBase}/file/bot${env.TG_Bot_Token}/${customPath}`;
+    upstream = await fetch(customUrl, {
+      method: request.method === 'HEAD' ? 'HEAD' : 'GET',
+      headers: fetchHeaders,
+      cf: { cacheTtl: 0, cacheEverything: false },
+    });
+    if (upstream.ok || upstream.status === 206) return upstream;
+  }
+
+  return upstream;
 }
 
 async function handleTelegramFile(context, fileId, record = null) {
@@ -325,17 +348,7 @@ async function handleTelegramFile(context, fileId, record = null) {
     return errorResponse('Failed to get file path from Telegram', 500);
   }
 
-  const filePath = cleanTelegramFilePath(rawPath);
-
-  const rangeHeader = request.headers.get('Range');
-  const fetchHeaders = new Headers();
-  if (rangeHeader) fetchHeaders.set('Range', rangeHeader);
-
-  const upstream = await fetch(buildFileDownloadUrl(env, filePath), {
-    method: request.method === 'HEAD' ? 'HEAD' : 'GET',
-    headers: fetchHeaders,
-    cf: { cacheTtl: 0, cacheEverything: false },
-  });
+  const upstream = await fetchFileFromTelegram(env, rawPath, request, rawPath);
 
   if (!upstream.ok && upstream.status !== 206) {
     return errorResponse('Failed to fetch file from Telegram', upstream.status);
@@ -363,18 +376,9 @@ async function handleSignedTelegramFile(context, signedMeta) {
 
   await backfillSignedTelegramMetadata(env, signedMeta);
 
+  const upstream = await fetchFileFromTelegram(env, rawPath, request, rawPath);
   const fileName = signedMeta.fileName || `${signedMeta.fileId}.${signedMeta.fileExtension || 'bin'}`;
   const mimeType = signedMeta.mimeType || getMimeType(fileName);
-
-  const rangeHeader = request.headers.get('Range');
-  const fetchHeaders = new Headers();
-  if (rangeHeader) fetchHeaders.set('Range', rangeHeader);
-
-  const upstream = await fetch(buildFileDownloadUrl(env, filePath), {
-    method: request.method === 'HEAD' ? 'HEAD' : 'GET',
-    headers: fetchHeaders,
-    cf: { cacheTtl: 0, cacheEverything: false },
-  });
 
   if (!upstream.ok && upstream.status !== 206) {
     return errorResponse('Failed to fetch file from Telegram', upstream.status);
