@@ -305,22 +305,29 @@ async function fetchFileFromTelegram(env, rawPath, request, customApiFallback) {
   if (rangeHeader) fetchHeaders.set('Range', rangeHeader);
 
   const officialUrl = `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${cleanPath.replace(/^\/+/, '')}`;
-  let upstream = await fetch(officialUrl, {
-    method: request.method === 'HEAD' ? 'HEAD' : 'GET',
-    headers: fetchHeaders,
-    cf: { cacheTtl: 0, cacheEverything: false },
-  });
+  let upstream;
+  try {
+    upstream = await fetch(officialUrl, {
+      method: request.method === 'HEAD' ? 'HEAD' : 'GET',
+      headers: fetchHeaders,
+    });
+  } catch {
+    upstream = new Response(null, { status: 502 });
+  }
   if (upstream.ok || upstream.status === 206) return upstream;
 
   if (env.CUSTOM_BOT_API_URL && customApiFallback) {
     const customBase = env.CUSTOM_BOT_API_URL.replace(/\/+$/, '');
     const customPath = customApiFallback.replace(/^\/+/, '');
     const customUrl = `${customBase}/file/bot${env.TG_Bot_Token}/${customPath}`;
-    upstream = await fetch(customUrl, {
-      method: request.method === 'HEAD' ? 'HEAD' : 'GET',
-      headers: fetchHeaders,
-      cf: { cacheTtl: 0, cacheEverything: false },
-    });
+    try {
+      upstream = await fetch(customUrl, {
+        method: request.method === 'HEAD' ? 'HEAD' : 'GET',
+        headers: fetchHeaders,
+      });
+    } catch {
+      upstream = new Response(null, { status: 502 });
+    }
     if (upstream.ok || upstream.status === 206) return upstream;
   }
 
