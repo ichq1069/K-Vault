@@ -288,14 +288,22 @@ async function incrementShareDownloadCount(env, kvKey, metadata = {}) {
   await putRecord(env, kvKey, '', { metadata: nextMetadata });
 }
 
-async function cleanTelegramFilePath(filePath) {
+function buildFileDownloadUrl(env, filePath) {
+  const normalizedPath = String(filePath || "").replace(/^\/+/, "");
+  if (env.CUSTOM_BOT_API_URL) {
+    return `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${normalizedPath}`;
+  }
+  return buildTelegramFileUrl(env, filePath);
+}
   if (!filePath) return filePath;
   const mediaTypes = ['photos', 'documents', 'videos', 'audio', 'stickers', 'voice', 'animation', 'video_note'];
   for (const type of mediaTypes) {
     const idx = filePath.indexOf(`/${type}/`);
-    if (idx !== -1) {
-      return filePath.substring(idx + 1);
-    }
+    if (idx === -1) continue;
+    const before = filePath.substring(0, idx);
+    const lastSlash = before.lastIndexOf('/');
+    const start = lastSlash === -1 ? idx : lastSlash;
+    return filePath.substring(start + 1);
   }
   return filePath;
 }
@@ -327,7 +335,7 @@ async function handleTelegramFile(context, fileId, record = null) {
   const fetchHeaders = new Headers();
   if (rangeHeader) fetchHeaders.set('Range', rangeHeader);
 
-  const upstream = await fetch(buildTelegramFileUrl(env, filePath), {
+  const upstream = await fetch(buildFileDownloadUrl(env, filePath), {
     method: request.method === 'HEAD' ? 'HEAD' : 'GET',
     headers: fetchHeaders,
     cf: { cacheTtl: 0, cacheEverything: false },
@@ -366,7 +374,7 @@ async function handleSignedTelegramFile(context, signedMeta) {
   const fetchHeaders = new Headers();
   if (rangeHeader) fetchHeaders.set('Range', rangeHeader);
 
-  const upstream = await fetch(buildTelegramFileUrl(env, filePath), {
+  const upstream = await fetch(buildFileDownloadUrl(env, filePath), {
     method: request.method === 'HEAD' ? 'HEAD' : 'GET',
     headers: fetchHeaders,
     cf: { cacheTtl: 0, cacheEverything: false },
